@@ -23,13 +23,31 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Card Stack Animation',
       home: Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            setState(() {
-              _shouldPlayAnimation = !_shouldPlayAnimation;
-            });
-          },
-          child: Icon(_shouldPlayAnimation ? Icons.pause : Icons.play_arrow),
+        floatingActionButton: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FloatingActionButton(
+              heroTag: 'undo',
+              onPressed: () {
+                // Trigger back swipe
+                final swiperState = CardsSwiperWidget.of<EduCard>(context);
+                swiperState?.backSwipe();
+              },
+              child: const Icon(Icons.undo),
+            ),
+            const SizedBox(width: 16),
+            FloatingActionButton(
+              heroTag: 'playpause',
+              onPressed: () {
+                setState(() {
+                  _shouldPlayAnimation = !_shouldPlayAnimation;
+                });
+              },
+              child: Icon(
+                _shouldPlayAnimation ? Icons.pause : Icons.play_arrow,
+              ),
+            ),
+          ],
         ),
         body: Center(
           child: CardsSwiperWidget<EduCard>(
@@ -117,6 +135,12 @@ class _MyAppState extends State<MyApp> {
 }
 
 class CardsSwiperWidget<T> extends StatefulWidget {
+  // Tambahkan of() untuk akses state dari luar
+  static CardsSwiperWidgetState<T>? of<T>(BuildContext context) {
+    final state = context.findAncestorStateOfType<CardsSwiperWidgetState<T>>();
+    return state;
+  }
+
   final List<T> cardData;
   final Duration animationDuration;
   final Duration downDragDuration;
@@ -175,10 +199,10 @@ class CardsSwiperWidget<T> extends StatefulWidget {
   });
 
   @override
-  State<CardsSwiperWidget<T>> createState() => _CardsSwiperWidgetState<T>();
+  State<CardsSwiperWidget<T>> createState() => CardsSwiperWidgetState<T>();
 }
 
-class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
+class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     with TickerProviderStateMixin {
   AnimationController? _controller;
   Animation<double>? _yOffsetAnimation;
@@ -198,6 +222,44 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   bool _shouldPlayVibration = true;
 
   late List<T> _cardData;
+  // Tambahkan stack untuk history swipe
+  final List<T> _swipeHistory = [];
+
+  // Define the backSwipe method to restore the last swiped card
+  AnimationController? _undoController;
+  Animation<double>? _undoAnimation;
+  bool _isUndoing = false;
+
+  void backSwipe() {
+    if (_swipeHistory.isNotEmpty && !_isUndoing) {
+      T last = _swipeHistory.removeLast();
+      // Update data kartu langsung
+      _cardData.remove(last);
+      _cardData.insert(0, last);
+      _updateCardWidgets();
+      if (widget.onCardChange != null) {
+        widget.onCardChange?.call(widget.cardData.indexOf(_cardData[0]));
+      }
+      // Jalankan animasi undo hanya untuk efek visual
+      _isUndoing = true;
+      _undoController = AnimationController(
+        duration: const Duration(milliseconds: 400),
+        vsync: this,
+      );
+      _undoAnimation = CurvedAnimation(
+        parent: _undoController!,
+        curve: Curves.easeInOut,
+      );
+      _undoController!.forward().then((_) {
+        setState(() {
+          _isUndoing = false;
+          _undoController?.dispose();
+          _undoController = null;
+          _undoAnimation = null;
+        });
+      });
+    }
+  }
 
   Timer? _debounceTimer;
 
@@ -302,7 +364,26 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _cardData.add(firstCard);
           onCardSwitchVibration();
 
+          // Simpan ke history swipe
+          _swipeHistory.add(firstCard);
+
           _isCardSwitched = true;
+          // Fitur back swipe
+          void backSwipe() {
+            if (_swipeHistory.isNotEmpty) {
+              setState(() {
+                T last = _swipeHistory.removeLast();
+                _cardData.remove(last);
+                _cardData.insert(0, last);
+                _updateCardWidgets();
+                if (widget.onCardChange != null) {
+                  widget.onCardChange?.call(
+                    widget.cardData.indexOf(_cardData[0]),
+                  );
+                }
+              });
+            }
+          }
 
           _updateCardWidgets();
 
@@ -463,30 +544,24 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
         widget.shouldStartCardCollectionAnimation ||
         _isAnimationBlocked ||
         _cardData.length == 1) {
-      // Do not process the gesture if animating or if the card has reached half or if there's only one card
       return;
     }
     if (_hasReachedHalf) {
-      // Stop responding to drag updates
       return;
     }
 
-    double dragDistance =
-        _dragStartPosition -
-        details.globalPosition.dy; // Positive when dragging up
+    double dragDistance = _dragStartPosition - details.globalPosition.dy;
 
     if (dragDistance >= 0) {
-      // Dragging up
+      // ...existing code...
       double dragFraction = dragDistance / widget.maxDragDistance;
       double newValue = (_startAnimationValue + dragFraction).clamp(0.0, 1.0);
       if (_controller != null) {
         _controller?.value = newValue;
       }
-      _dragOffset = 0.0; // Reset drag offset
-
+      _dragOffset = 0.0;
       if ((_controller?.value ?? 0.0) >= 0.5 && !_hasReachedHalf) {
         _hasReachedHalf = true;
-        // Automatically animate to 1.0
         final double remaining = 1.0 - (_controller?.value ?? 0.0);
         final int duration =
             ((_controller?.duration?.inMilliseconds ?? 0) * remaining).round();
@@ -506,19 +581,17 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     } else {
       // Dragging down
       if (_controller != null) {
-        _controller?.value =
-            _startAnimationValue; // Keep animation controller at current value
+        _controller?.value = _startAnimationValue;
       }
-      double downDragOffset = dragDistance.clamp(
-        widget.dragDownLimit,
-        0.0,
-      ); // Limit to dragDownLimit pixels
+      double downDragOffset = dragDistance.clamp(widget.dragDownLimit, 0.0);
       _dragOffset = -downDragOffset;
       if (downDragOffset == widget.dragDownLimit) {
         if (_shouldPlayVibration) {
           onCardBlockVibration();
           _shouldPlayVibration = false;
         }
+        // Trigger undo/back swipe jika drag ke bawah maksimal
+        backSwipe();
       }
     }
   }
@@ -587,7 +660,6 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     return RepaintBoundary(
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
-        // Attach gesture detectors
         onVerticalDragStart: _onVerticalDragStart,
         onVerticalDragUpdate: _onVerticalDragUpdate,
         onVerticalDragEnd: _onVerticalDragEnd,
@@ -598,9 +670,9 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
             if (widget.shouldStartCardCollectionAnimation)
               _cardCollectionAnimationController ??
                   AnimationController(vsync: this),
+            if (_undoController != null) _undoController!,
           ]),
           builder: (context, child) {
-            // Calculate the total Y offset including drag offset
             double yOffsetAnimationValue = _yOffsetAnimation?.value ?? 0.0;
             double rotation = _rotationAnimation?.value ?? 0.0;
             double totalYOffset =
@@ -609,8 +681,15 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
                     ? _downDragAnimation?.value ?? 0.0
                     : _dragOffset);
 
+            // Undo animation: kartu masuk dari bawah
+            double undoYOffset = 0.0;
+            if (_isUndoing && _undoAnimation != null) {
+              // Dari 220 ke 0 (masuk ke atas)
+              undoYOffset =
+                  (1 - _undoAnimation!.value) * widget.maxDragDistance;
+            }
+
             if ((_controller?.value ?? 0.0) >= 0.5) {
-              // Adjust for the second card if only two cards are present
               totalYOffset += _cardData.length == 2
                   ? widget.secondCardOffsetStart
                   : widget.thirdCardOffsetStart;
@@ -619,32 +698,42 @@ class _CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
             List<Widget> stackChildren = [];
 
             if (_cardData.length == 1) {
-              // Only one card, so only build the top card
-              stackChildren.add(_topCardWidget ?? const SizedBox.shrink());
+              stackChildren.add(
+                Transform.translate(
+                  offset: Offset(0, undoYOffset),
+                  child: _topCardWidget ?? const SizedBox.shrink(),
+                ),
+              );
             } else {
               int cardCount = min(_cardData.length, 3);
-
               if (_isCardSwitched) {
-                // After the switch, reverse the order of the stack
                 for (int i = 0; i < cardCount; i++) {
                   if (i == 0) {
-                    stackChildren.add(buildTopCard(totalYOffset, rotation));
+                    stackChildren.add(
+                      Transform.translate(
+                        offset: Offset(0, undoYOffset),
+                        child: buildTopCard(totalYOffset, rotation),
+                      ),
+                    );
                   } else {
                     stackChildren.add(buildCard(cardCount - i));
                   }
                 }
               } else {
-                // Before the switch, normal order
                 for (int i = cardCount - 1; i >= 0; i--) {
                   if (i == 0) {
-                    stackChildren.add(buildTopCard(totalYOffset, rotation));
+                    stackChildren.add(
+                      Transform.translate(
+                        offset: Offset(0, undoYOffset),
+                        child: buildTopCard(totalYOffset, rotation),
+                      ),
+                    );
                   } else {
                     stackChildren.add(buildCard(i));
                   }
                 }
               }
             }
-
             return Stack(alignment: Alignment.center, children: stackChildren);
           },
         ),
