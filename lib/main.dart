@@ -42,10 +42,14 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkTutorialStatus() async {
-    await Future.delayed(Duration(seconds: 2));
+    await Future.delayed(Duration(seconds: 2)); // Splash screen delay
 
     final prefs = await SharedPreferences.getInstance();
     final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
+
+    print('=== SPLASH DEBUG ===');
+    print('Tutorial completed: $tutorialCompleted');
+    print('==================');
 
     if (mounted) {
       if (tutorialCompleted) {
@@ -91,8 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 10),
             Text(
-              'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.',
-              textAlign: TextAlign.center,
+              'Pembelajaran Interaktif',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white70,
@@ -122,6 +125,7 @@ class _HomePageState extends State<HomePage> {
   bool isSoundEnabled = true;
   late FlutterTts flutterTts;
   int currentCardIndex = 0;
+  BuildContext? _showcaseContext; // Menyimpan context untuk showcase
 
   // Showcase keys
   final GlobalKey _soundButtonKey = GlobalKey();
@@ -129,20 +133,11 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey _cardKey = GlobalKey();
   final GlobalKey _progressKey = GlobalKey();
 
-  bool _showShowcase = true;
-
   @override
   void initState() {
     super.initState();
     _initTts();
     _loadLastCardIndex();
-
-    // Show showcase after build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_showShowcase) {
-        _startShowcase();
-      }
-    });
   }
 
   // Load last card index from SharedPreferences
@@ -152,12 +147,14 @@ class _HomePageState extends State<HomePage> {
       final savedIndex = prefs.getInt('last_card_index') ?? 0;
       final savedSoundState = prefs.getBool('sound_enabled') ?? true;
       final tutorialStatus = prefs.getBool('tutorial_completed') ?? false;
+      final showcaseShown = prefs.getBool('showcase_shown') ?? false;
 
       // Log untuk debugging
       print('=== HOME PAGE DEBUG ===');
       print('Loading saved card index: $savedIndex');
       print('Sound enabled: $savedSoundState');
       print('Tutorial completed status: $tutorialStatus');
+      print('Showcase shown status: $showcaseShown');
       print('====================');
 
       setState(() {
@@ -183,6 +180,37 @@ class _HomePageState extends State<HomePage> {
     } catch (e) {
       print('Error saving state: $e');
     }
+  }
+
+  // Show progress info modal
+  void _showProgressInfo() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.info_outline, color: ThemeColors.baseColor),
+              SizedBox(width: 8),
+              Text('Info Progress'),
+            ],
+          ),
+          content: Text(
+            'Progress pembelajaran Anda disimpan secara otomatis walaupun Anda keluar aplikasi. Anda dapat melanjutkan belajar dari kartu terakhir yang Anda lihat.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Mengerti',
+                style: TextStyle(color: ThemeColors.baseColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Show reset dialog
@@ -219,12 +247,15 @@ class _HomePageState extends State<HomePage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('last_card_index', 0);
       await prefs.setBool('tutorial_completed', false); // Reset tutorial status
+      await prefs.setBool('showcase_shown', false); // Reset showcase status
 
-      // Log untuk debugging
       print('=== RESET PROGRESS DEBUG ===');
       print('Resetting tutorial_completed to: false');
-      final resetValue = prefs.getBool('tutorial_completed') ?? true;
-      print('Verification - SharedPreferences value after reset: $resetValue');
+      print('Resetting showcase_shown to: false');
+      final resetTutorial = prefs.getBool('tutorial_completed') ?? true;
+      final resetShowcase = prefs.getBool('showcase_shown') ?? true;
+      print('Verification - Tutorial after reset: $resetTutorial');
+      print('Verification - Showcase after reset: $resetShowcase');
       print('Navigating to: /tutorial');
       print('==========================');
 
@@ -253,9 +284,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startShowcase() {
-    ShowCaseWidget.of(
-      context,
-    ).startShowCase([_soundButtonKey, _cardKey, _progressKey, _menuButtonKey]);
+    print('=== SHOWCASE DEBUG ===');
+    print('Starting showcase from menu Tips Penggunaan');
+    print('Showcase context available: ${_showcaseContext != null}');
+    print('===================');
+
+    if (_showcaseContext != null) {
+      ShowCaseWidget.of(_showcaseContext!).startShowCase([
+        _soundButtonKey,
+        _cardKey,
+        _progressKey,
+        _menuButtonKey,
+      ]);
+    } else {
+      print('ERROR: Showcase context is null');
+    }
   }
 
   void _initTts() {
@@ -278,7 +321,6 @@ class _HomePageState extends State<HomePage> {
     if (!isSoundEnabled) {
       flutterTts.stop();
     }
-    // Save sound state
     _saveLastCardIndex();
   }
 
@@ -291,9 +333,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return ShowCaseWidget(
-      builder: (context) => MaterialApp(
-        title: 'EduCard',
-        home: Scaffold(
+      builder: (showcaseContext) {
+        // Simpan context untuk showcase
+        _showcaseContext = showcaseContext;
+
+        return Scaffold(
           appBar: AppBar(
             backgroundColor: ThemeColors.baseColor,
             elevation: 8,
@@ -304,17 +348,10 @@ class _HomePageState extends State<HomePage> {
                 bottomRight: Radius.circular(25),
               ),
             ),
-            toolbarHeight: 70, // Tinggi AppBar sedikit lebih besar
+            toolbarHeight: 70,
             title: Row(
               children: [
-                Container(
-                  padding: EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(Icons.school, color: Colors.white, size: 28),
-                ),
+                Icon(Icons.school, color: Colors.white, size: 28),
                 SizedBox(width: 12),
                 Text(
                   'EduCard',
@@ -333,48 +370,44 @@ class _HomePageState extends State<HomePage> {
                 title: 'Kontrol Suara',
                 description:
                     'Tekan untuk menghidupkan atau mematikan suara narasi',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
                 targetBorderRadius: BorderRadius.circular(25),
-                child: Container(
-                  margin: EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1,
-                    ),
+                child: IconButton(
+                  onPressed: _toggleSound,
+                  icon: Icon(
+                    isSoundEnabled ? Icons.volume_up : Icons.volume_off,
+                    color: Colors.white,
+                    size: 26,
                   ),
-                  child: IconButton(
-                    onPressed: _toggleSound,
-                    icon: Icon(
-                      isSoundEnabled ? Icons.volume_up : Icons.volume_off,
-                      color: Colors.white,
-                      size: 26,
-                    ),
-                    tooltip: isSoundEnabled
-                        ? 'Matikan Suara'
-                        : 'Nyalakan Suara',
-                  ),
+                  tooltip: isSoundEnabled ? 'Matikan Suara' : 'Nyalakan Suara',
                 ),
               ),
               Showcase(
                 key: _menuButtonKey,
                 title: 'Menu Bantuan',
                 description: 'Akses tutorial dan tips penggunaan',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
                 targetBorderRadius: BorderRadius.circular(25),
                 child: PopupMenuButton<String>(
-                  icon: Container(
-                    padding: EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(25),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Icon(Icons.more_vert, color: Colors.white, size: 20),
-                  ),
+                  icon: Icon(Icons.more_vert, color: Colors.white, size: 20),
                   onSelected: (String value) {
                     if (value == 'tutorial') {
                       Navigator.pushNamed(context, '/tutorial');
@@ -427,6 +460,16 @@ class _HomePageState extends State<HomePage> {
                     title: 'Kartu Pembelajaran',
                     description:
                         'Ketuk untuk membalik kartu, swipe atas/bawah untuk navigasi',
+                    titleTextStyle: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    descTextStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black,
+                    ),
                     targetBorderRadius: BorderRadius.circular(10),
                     child: CardsSwiperWidget<BaseDatas>(
                       cardData: cards,
@@ -437,7 +480,6 @@ class _HomePageState extends State<HomePage> {
                         if (index >= 0 && index < cards.length) {
                           _speak(cards[index].description);
                         }
-                        // Save current card index
                         _saveLastCardIndex();
                       },
                       cardBuilder: (context, index, visibleIndex) {
@@ -538,6 +580,16 @@ class _HomePageState extends State<HomePage> {
                 title: 'Progress Pembelajaran',
                 description:
                     'Menunjukkan kartu ke berapa dan kemajuan belajar Anda',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
                 targetBorderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding: EdgeInsets.all(20),
@@ -555,8 +607,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           SizedBox(width: 8),
-                          Tooltip(
-                            message: 'Progress tersimpan otomatis',
+                          GestureDetector(
+                            onTap: _showProgressInfo,
                             child: Icon(
                               Icons.info_outline,
                               size: 16,
@@ -590,8 +642,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
