@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:async';
+import 'card_data.dart';
 
 void main() => runApp(const MyApp());
 
@@ -14,18 +15,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _shouldPlayAnimation = false;
-  final List<Map<String, dynamic>> cards = [
-    {'color': Colors.blue, 'text': 'Card 1'},
-    {'color': Colors.red, 'text': 'Card 2'},
-    {'color': Colors.green, 'text': 'Card 3'},
-    {'color': Colors.purple, 'text': 'Card 4'},
-    {'color': Colors.orange, 'text': 'Card 5'},
-    {'color': Colors.teal, 'text': 'Card 6'},
-    {'color': Colors.pink, 'text': 'Card 7'},
-    {'color': Colors.amber, 'text': 'Card 8'},
-    {'color': Colors.indigo, 'text': 'Card 9'},
-    {'color': Colors.brown, 'text': 'Card 10'},
-  ];
+  // Use EduCard data from card_data.dart
+  final List<EduCard> cards = eduCards;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +32,7 @@ class _MyAppState extends State<MyApp> {
           child: Icon(_shouldPlayAnimation ? Icons.pause : Icons.play_arrow),
         ),
         body: Center(
-          child: CardsSwiperWidget(
+          child: CardsSwiperWidget<EduCard>(
             onCardCollectionAnimationComplete: (value) {
               setState(() {
                 _shouldPlayAnimation = value;
@@ -56,13 +47,26 @@ class _MyAppState extends State<MyApp> {
               if (index < 0 || index >= cards.length) {
                 return const SizedBox.shrink();
               }
-              final card = cards[index];
+              final EduCard card = cards[index];
+              // Daftar warna random yang konsisten
+              final List<Color> cardColors = [
+                Colors.blueAccent,
+                Colors.redAccent,
+                Colors.green,
+                Colors.purple,
+                Colors.orange,
+                Colors.teal,
+                Colors.pink,
+                Colors.amber,
+                Colors.indigo,
+                Colors.brown,
+              ];
+              final color = cardColors[index % cardColors.length];
               return AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (Widget child, Animation<double> animation) {
                   final bool isIncoming =
                       child.key == ValueKey<int>(visibleIndex);
-
                   if (isIncoming) {
                     return FadeTransition(opacity: animation, child: child);
                   } else {
@@ -73,14 +77,34 @@ class _MyAppState extends State<MyApp> {
                   key: ValueKey<int>(visibleIndex),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: card['color'] as Color,
+                    color: color,
                   ),
                   width: 300,
-                  height: 200,
-                  alignment: Alignment.center,
-                  child: Text(
-                    card['text'] as String,
-                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  height: 250,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.network(
+                        card.imageUrl,
+                        height: 100,
+                        fit: BoxFit.cover,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        card.description,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Q: ${card.question}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'A: ${card.answer}',
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                    ],
                   ),
                 ),
               );
