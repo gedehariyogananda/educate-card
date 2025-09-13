@@ -30,7 +30,6 @@ class _MyAppState extends State<MyApp> {
             FloatingActionButton(
               heroTag: 'undo',
               onPressed: () {
-                // Trigger back swipe
                 final swiperState = CardsSwiperWidget.of<BaseDatas>(context);
                 swiperState?.backSwipe();
               },
@@ -67,7 +66,6 @@ class _MyAppState extends State<MyApp> {
                 return const SizedBox.shrink();
               }
               final BaseDatas card = cards[index];
-              // Menggunakan warna dari theme
               final color =
                   ThemeColors.cardColors[index % ThemeColors.cardColors.length];
               return AnimatedSwitcher(
@@ -170,7 +168,6 @@ class CardsSwiperWidget<T> extends StatefulWidget {
     this.dragDownLimit = -40.0,
     this.thresholdValue = 0.3,
     this.onCardChange,
-    // Default offset and scale values
     this.topCardOffsetStart = 0.0,
     this.topCardOffsetEnd = -15.0,
     this.topCardScaleStart = 1.0,
@@ -212,10 +209,8 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   bool _shouldPlayVibration = true;
 
   late List<T> _cardData;
-  // Tambahkan stack untuk history swipe
   final List<T> _swipeHistory = [];
 
-  // Define the backSwipe method to restore the last swiped card
   AnimationController? _undoController;
   Animation<double>? _undoAnimation;
   bool _isUndoing = false;
@@ -231,12 +226,12 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
       }
       _isUndoing = true;
       _undoController = AnimationController(
-        duration: const Duration(milliseconds: 400),
+        duration: const Duration(milliseconds: 700),
         vsync: this,
       );
       _undoAnimation = CurvedAnimation(
         parent: _undoController!,
-        curve: Curves.easeInOut,
+        curve: Curves.easeOutCubic,
       );
       _undoController!.forward().then((_) {
         setState(() {
@@ -284,10 +279,8 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   void initState() {
     super.initState();
 
-    // Reorganize card data based on initial index
     _cardData = List.from(widget.cardData);
     if (widget.initialIndex > 0 && widget.initialIndex < _cardData.length) {
-      // Reorder the list to start from the initial index
       final reorderedData = <T>[];
       for (int i = widget.initialIndex; i < _cardData.length; i++) {
         reorderedData.add(_cardData[i]);
@@ -384,7 +377,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
                   _swipeHistory.clear();
                   _updateCardWidgets();
                 });
-                // Reset index ke 0 di main.dart
                 if (widget.onCardChange != null) {
                   widget.onCardChange?.call(0);
                 }
@@ -538,7 +530,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
               _swipeHistory.clear();
               _updateCardWidgets();
             });
-            // Reset index ke 0 di main.dart
             if (widget.onCardChange != null) {
               widget.onCardChange?.call(0);
             }
@@ -560,7 +551,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
               _swipeHistory.clear();
               _updateCardWidgets();
             });
-            // Reset index ke 0 di main.dart
             if (widget.onCardChange != null) {
               widget.onCardChange?.call(0);
             }
@@ -700,8 +690,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
 
             double undoYOffset = 0.0;
             if (_isUndoing && _undoAnimation != null) {
+              // Animasi undo dari atas dengan efek yang lebih jelas
+              // Mulai dari posisi atas (-maxDragDistance) dan turun ke posisi normal (0)
               undoYOffset =
-                  (1 - _undoAnimation!.value) * widget.maxDragDistance;
+                  -(1.0 - _undoAnimation!.value) * widget.maxDragDistance;
             }
 
             if ((_controller?.value ?? 0.0) >= 0.5) {
@@ -794,6 +786,13 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           } else {
             scale = 0.9;
           }
+        }
+
+        // Tambahkan scale animation untuk undo
+        if (_isUndoing && _undoAnimation != null) {
+          // Scale dari 0.8 ke 1.0 untuk efek yang lebih dramatis
+          double undoScale = 0.8 + (0.2 * _undoAnimation!.value);
+          scale *= undoScale;
         }
 
         return Transform(
