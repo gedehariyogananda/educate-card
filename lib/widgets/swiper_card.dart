@@ -131,6 +131,7 @@ class CardsSwiperWidget<T> extends StatefulWidget {
   }
 
   final List<T> cardData;
+  final int initialIndex;
   final Duration animationDuration;
   final Duration downDragDuration;
   final Duration collectionDuration;
@@ -161,6 +162,7 @@ class CardsSwiperWidget<T> extends StatefulWidget {
   const CardsSwiperWidget({
     required this.cardData,
     required this.cardBuilder,
+    this.initialIndex = 0,
     this.animationDuration = const Duration(milliseconds: 800),
     this.downDragDuration = const Duration(milliseconds: 300),
     this.collectionDuration = const Duration(milliseconds: 1000),
@@ -282,7 +284,19 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   void initState() {
     super.initState();
 
+    // Reorganize card data based on initial index
     _cardData = List.from(widget.cardData);
+    if (widget.initialIndex > 0 && widget.initialIndex < _cardData.length) {
+      // Reorder the list to start from the initial index
+      final reorderedData = <T>[];
+      for (int i = widget.initialIndex; i < _cardData.length; i++) {
+        reorderedData.add(_cardData[i]);
+      }
+      for (int i = 0; i < widget.initialIndex; i++) {
+        reorderedData.add(_cardData[i]);
+      }
+      _cardData = reorderedData;
+    }
 
     _controller = AnimationController(
       duration: widget.animationDuration,

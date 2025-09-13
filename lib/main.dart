@@ -42,14 +42,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _checkTutorialStatus() async {
-    await Future.delayed(Duration(seconds: 2)); // Splash screen delay
+    await Future.delayed(Duration(seconds: 2));
 
     final prefs = await SharedPreferences.getInstance();
     final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
-
-    print('=== SPLASH DEBUG ===');
-    print('Tutorial completed: $tutorialCompleted');
-    print('==================');
 
     if (mounted) {
       if (tutorialCompleted) {
@@ -95,7 +91,8 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             SizedBox(height: 10),
             Text(
-              'Pembelajaran Interaktif',
+              'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white70,
@@ -125,9 +122,8 @@ class _HomePageState extends State<HomePage> {
   bool isSoundEnabled = true;
   late FlutterTts flutterTts;
   int currentCardIndex = 0;
-  BuildContext? _showcaseContext; // Menyimpan context untuk showcase
+  BuildContext? _showcaseContext;
 
-  // Showcase keys
   final GlobalKey _soundButtonKey = GlobalKey();
   final GlobalKey _menuButtonKey = GlobalKey();
   final GlobalKey _cardKey = GlobalKey();
@@ -140,7 +136,6 @@ class _HomePageState extends State<HomePage> {
     _loadLastCardIndex();
   }
 
-  // Load last card index from SharedPreferences
   Future<void> _loadLastCardIndex() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -149,30 +144,18 @@ class _HomePageState extends State<HomePage> {
       final tutorialStatus = prefs.getBool('tutorial_completed') ?? false;
       final showcaseShown = prefs.getBool('showcase_shown') ?? false;
 
-      // Log untuk debugging
-      print('=== HOME PAGE DEBUG ===');
-      print('Loading saved card index: $savedIndex');
-      print('Sound enabled: $savedSoundState');
-      print('Tutorial completed status: $tutorialStatus');
-      print('Showcase shown status: $showcaseShown');
-      print('====================');
-
       setState(() {
         currentCardIndex = savedIndex.clamp(0, cards.length - 1);
         isSoundEnabled = savedSoundState;
       });
 
-      // Speak current card if sound is enabled
       if (isSoundEnabled && currentCardIndex < cards.length) {
         _speak(cards[currentCardIndex].description);
       }
 
-      // Auto start showcase if not shown before and tutorial is completed
       if (!showcaseShown && tutorialStatus) {
-        // Delay to ensure the UI is built
         Future.delayed(Duration(milliseconds: 500), () {
           _startShowcase();
-          // Mark showcase as shown
           prefs.setBool('showcase_shown', true);
         });
       }
@@ -181,7 +164,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Save current card index to SharedPreferences
   Future<void> _saveLastCardIndex() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -256,32 +238,19 @@ class _HomePageState extends State<HomePage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('last_card_index', 0);
-      await prefs.setBool('tutorial_completed', false); // Reset tutorial status
-      await prefs.setBool('showcase_shown', false); // Reset showcase status
-
-      print('=== RESET PROGRESS DEBUG ===');
-      print('Resetting tutorial_completed to: false');
-      print('Resetting showcase_shown to: false');
-      final resetTutorial = prefs.getBool('tutorial_completed') ?? true;
-      final resetShowcase = prefs.getBool('showcase_shown') ?? true;
-      print('Verification - Tutorial after reset: $resetTutorial');
-      print('Verification - Showcase after reset: $resetShowcase');
-      print('Navigating to: /tutorial');
-      print('==========================');
+      await prefs.setBool('tutorial_completed', false);
+      await prefs.setBool('showcase_shown', false);
 
       setState(() {
         currentCardIndex = 0;
       });
 
-      // Navigate to tutorial
       Navigator.pushReplacementNamed(context, '/tutorial');
 
-      // Speak first card if sound is enabled
       if (isSoundEnabled && cards.isNotEmpty) {
         _speak(cards[0].description);
       }
 
-      // Show snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Progress telah direset ke kartu pertama'),
@@ -294,11 +263,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startShowcase() {
-    print('=== SHOWCASE DEBUG ===');
-    print('Starting showcase from menu Tips Penggunaan');
-    print('Showcase context available: ${_showcaseContext != null}');
-    print('===================');
-
     if (_showcaseContext != null) {
       ShowCaseWidget.of(_showcaseContext!).startShowCase([
         _soundButtonKey,
@@ -306,8 +270,6 @@ class _HomePageState extends State<HomePage> {
         _progressKey,
         _menuButtonKey,
       ]);
-    } else {
-      print('ERROR: Showcase context is null');
     }
   }
 
@@ -344,7 +306,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return ShowCaseWidget(
       builder: (showcaseContext) {
-        // Simpan context untuk showcase
         _showcaseContext = showcaseContext;
 
         return Scaffold(
@@ -483,6 +444,7 @@ class _HomePageState extends State<HomePage> {
                     targetBorderRadius: BorderRadius.circular(10),
                     child: CardsSwiperWidget<BaseDatas>(
                       cardData: cards,
+                      initialIndex: currentCardIndex,
                       onCardChange: (index) {
                         setState(() {
                           currentCardIndex = index;
