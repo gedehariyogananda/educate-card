@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:introduction_screen/introduction_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/theme_colors.dart';
-import '../main.dart';
 
 class TutorialScreen extends StatelessWidget {
   const TutorialScreen({super.key});
@@ -135,11 +135,22 @@ class TutorialScreen extends StatelessWidget {
     );
   }
 
-  void _onIntroEnd(BuildContext context) {
-    // Set tutorial completed flag
-    MyApp.tutorialCompleted = true;
+  void _onIntroEnd(BuildContext context) async {
+    // Save tutorial completed status to SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('tutorial_completed', true);
 
-    // Kembali ke main screen
-    Navigator.of(context).pushReplacementNamed('/home');
+    // Log untuk debugging
+    print('=== TUTORIAL SCREEN DEBUG ===');
+    print('Tutorial completed, saving to SharedPreferences: true');
+    final saved = prefs.getBool('tutorial_completed') ?? false;
+    print('Verification - SharedPreferences value: $saved');
+    print('Navigating to: /home');
+    print('===========================');
+
+    // Navigate to home screen
+    if (context.mounted) {
+      Navigator.of(context).pushReplacementNamed('/home');
+    }
   }
 }

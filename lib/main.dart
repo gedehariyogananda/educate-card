@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/swiper_card.dart';
 import 'models/card_data.dart';
 import 'widgets/flip_card.dart';
@@ -12,18 +13,99 @@ void main() => runApp(const MyApp());
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // Static variable untuk track tutorial status
-  static bool tutorialCompleted = false;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'EduCard',
-      initialRoute: tutorialCompleted ? '/home' : '/tutorial',
+      initialRoute: '/',
       routes: {
+        '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialScreen(),
         '/home': (context) => const HomePage(),
       },
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkTutorialStatus();
+  }
+
+  Future<void> _checkTutorialStatus() async {
+    await Future.delayed(Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
+
+    if (mounted) {
+      if (tutorialCompleted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.pushReplacementNamed(context, '/tutorial');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: ThemeColors.baseColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.school, size: 80, color: ThemeColors.baseColor),
+            ),
+            SizedBox(height: 30),
+            Text(
+              'EduCard',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 1.5,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+                letterSpacing: 0.5,
+              ),
+            ),
+            SizedBox(height: 50),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -53,13 +135,121 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initTts();
+    _loadLastCardIndex();
 
     // Show showcase after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_showShowcase && MyApp.tutorialCompleted) {
+      if (_showShowcase) {
         _startShowcase();
       }
     });
+  }
+
+  // Load last card index from SharedPreferences
+  Future<void> _loadLastCardIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIndex = prefs.getInt('last_card_index') ?? 0;
+      final savedSoundState = prefs.getBool('sound_enabled') ?? true;
+      final tutorialStatus = prefs.getBool('tutorial_completed') ?? false;
+
+      // Log untuk debugging
+      print('=== HOME PAGE DEBUG ===');
+      print('Loading saved card index: $savedIndex');
+      print('Sound enabled: $savedSoundState');
+      print('Tutorial completed status: $tutorialStatus');
+      print('====================');
+
+      setState(() {
+        currentCardIndex = savedIndex.clamp(0, cards.length - 1);
+        isSoundEnabled = savedSoundState;
+      });
+
+      // Speak current card if sound is enabled
+      if (isSoundEnabled && currentCardIndex < cards.length) {
+        _speak(cards[currentCardIndex].description);
+      }
+    } catch (e) {
+      print('Error loading saved state: $e');
+    }
+  }
+
+  // Save current card index to SharedPreferences
+  Future<void> _saveLastCardIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_card_index', currentCardIndex);
+      await prefs.setBool('sound_enabled', isSoundEnabled);
+    } catch (e) {
+      print('Error saving state: $e');
+    }
+  }
+
+  // Show reset dialog
+  void _showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Reset Progress'),
+          content: Text(
+            'Apakah Anda yakin ingin mengulang dari kartu pertama dan melihat tutorial lagi?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetProgress();
+              },
+              child: Text('Reset', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Reset progress to first card
+  Future<void> _resetProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_card_index', 0);
+      await prefs.setBool('tutorial_completed', false); // Reset tutorial status
+
+      // Log untuk debugging
+      print('=== RESET PROGRESS DEBUG ===');
+      print('Resetting tutorial_completed to: false');
+      final resetValue = prefs.getBool('tutorial_completed') ?? true;
+      print('Verification - SharedPreferences value after reset: $resetValue');
+      print('Navigating to: /tutorial');
+      print('==========================');
+
+      setState(() {
+        currentCardIndex = 0;
+      });
+
+      // Navigate to tutorial
+      Navigator.pushReplacementNamed(context, '/tutorial');
+
+      // Speak first card if sound is enabled
+      if (isSoundEnabled && cards.isNotEmpty) {
+        _speak(cards[0].description);
+      }
+
+      // Show snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Progress telah direset ke kartu pertama'),
+          backgroundColor: ThemeColors.baseColor,
+        ),
+      );
+    } catch (e) {
+      print('Error resetting progress: $e');
+    }
   }
 
   void _startShowcase() {
@@ -88,6 +278,8 @@ class _HomePageState extends State<HomePage> {
     if (!isSoundEnabled) {
       flutterTts.stop();
     }
+    // Save sound state
+    _saveLastCardIndex();
   }
 
   @override
@@ -188,6 +380,8 @@ class _HomePageState extends State<HomePage> {
                       Navigator.pushNamed(context, '/tutorial');
                     } else if (value == 'showcase') {
                       _startShowcase();
+                    } else if (value == 'reset') {
+                      _showResetDialog();
                     }
                   },
                   itemBuilder: (BuildContext context) => [
@@ -243,6 +437,8 @@ class _HomePageState extends State<HomePage> {
                         if (index >= 0 && index < cards.length) {
                           _speak(cards[index].description);
                         }
+                        // Save current card index
+                        _saveLastCardIndex();
                       },
                       cardBuilder: (context, index, visibleIndex) {
                         final BaseDatas card = cards[index];
@@ -347,15 +543,29 @@ class _HomePageState extends State<HomePage> {
                   padding: EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      Text(
-                        '${currentCardIndex + 1}/${cards.length}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeColors.baseColor,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${currentCardIndex + 1}/${cards.length}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeColors.baseColor,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Tooltip(
+                            message: 'Progress tersimpan otomatis',
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 12),
                       Container(
                         width: double.infinity,
                         height: 8,
