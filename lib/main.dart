@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'card_swipper.dart';
-import 'card_data.dart';
-import 'flip_card.dart';
+import 'widgets/swiper_card.dart';
+import 'models/card_data.dart';
+import 'widgets/flip_card.dart';
+import 'utils/theme_colors.dart';
 
 void main() => runApp(const MyApp());
 
@@ -13,27 +14,23 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // Gunakan data EduCard dari card_data.dart
-  final List<EduCard> cards = eduCards;
+  final List<BaseDatas> cards = datas;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Card Stack Animation',
       home: Scaffold(
         body: Center(
-          child: CardsSwiperWidget<EduCard>(
+          child: CardsSwiperWidget<BaseDatas>(
             cardData: cards,
-            onCardChange: (index) {
-              print('Top card index: $index');
-            },
+            onCardChange: (index) {},
             cardBuilder: (context, index, visibleIndex) {
-              final EduCard card = cards[index];
+              final BaseDatas card = cards[index];
               return FlipCard(
                 front: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: Color.fromARGB(255, 255, 124, 167),
+                    color: ThemeColors.baseColor,
                   ),
                   width: 300,
                   height: 250,
@@ -56,7 +53,7 @@ class _MyAppState extends State<MyApp> {
                 back: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    color: Color.fromARGB(255, 255, 124, 167),
+                    color: ThemeColors.baseColor,
                   ),
                   width: 300,
                   height: 250,

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 import 'dart:async';
-import 'card_data.dart';
+import '../models/card_data.dart';
+import '../utils/alert_dialogs.dart';
+import '../utils/theme_colors.dart';
 
 void main() => runApp(const MyApp());
 
@@ -15,8 +17,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _shouldPlayAnimation = false;
-  // Use EduCard data from card_data.dart
-  final List<EduCard> cards = eduCards;
+  final List<BaseDatas> cards = BaseDatas as List<BaseDatas>;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +31,7 @@ class _MyAppState extends State<MyApp> {
               heroTag: 'undo',
               onPressed: () {
                 // Trigger back swipe
-                final swiperState = CardsSwiperWidget.of<EduCard>(context);
+                final swiperState = CardsSwiperWidget.of<BaseDatas>(context);
                 swiperState?.backSwipe();
               },
               child: const Icon(Icons.undo),
@@ -50,7 +51,7 @@ class _MyAppState extends State<MyApp> {
           ],
         ),
         body: Center(
-          child: CardsSwiperWidget<EduCard>(
+          child: CardsSwiperWidget<BaseDatas>(
             onCardCollectionAnimationComplete: (value) {
               setState(() {
                 _shouldPlayAnimation = value;
@@ -65,21 +66,10 @@ class _MyAppState extends State<MyApp> {
               if (index < 0 || index >= cards.length) {
                 return const SizedBox.shrink();
               }
-              final EduCard card = cards[index];
-              // Daftar warna random yang konsisten
-              final List<Color> cardColors = [
-                Colors.blueAccent,
-                Colors.redAccent,
-                Colors.green,
-                Colors.purple,
-                Colors.orange,
-                Colors.teal,
-                Colors.pink,
-                Colors.amber,
-                Colors.indigo,
-                Colors.brown,
-              ];
-              final color = cardColors[index % cardColors.length];
+              final BaseDatas card = cards[index];
+              // Menggunakan warna dari theme
+              final color =
+                  ThemeColors.cardColors[index % ThemeColors.cardColors.length];
               return AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 transitionBuilder: (Widget child, Animation<double> animation) {
@@ -135,7 +125,6 @@ class _MyAppState extends State<MyApp> {
 }
 
 class CardsSwiperWidget<T> extends StatefulWidget {
-  // Tambahkan of() untuk akses state dari luar
   static CardsSwiperWidgetState<T>? of<T>(BuildContext context) {
     final state = context.findAncestorStateOfType<CardsSwiperWidgetState<T>>();
     return state;
@@ -154,7 +143,6 @@ class CardsSwiperWidget<T> extends StatefulWidget {
   final bool shouldStartCardCollectionAnimation;
   final void Function(bool value) onCardCollectionAnimationComplete;
 
-  // Offset and scale parameters
   final double topCardOffsetStart;
   final double topCardOffsetEnd;
   final double topCardScaleStart;
@@ -233,14 +221,12 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   void backSwipe() {
     if (_swipeHistory.isNotEmpty && !_isUndoing) {
       T last = _swipeHistory.removeLast();
-      // Update data kartu langsung
       _cardData.remove(last);
       _cardData.insert(0, last);
       _updateCardWidgets();
       if (widget.onCardChange != null) {
         widget.onCardChange?.call(widget.cardData.indexOf(_cardData[0]));
       }
-      // Jalankan animasi undo hanya untuk efek visual
       _isUndoing = true;
       _undoController = AnimationController(
         duration: const Duration(milliseconds: 400),
@@ -296,22 +282,18 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   void initState() {
     super.initState();
 
-    // Copy the card data to allow modifications
     _cardData = List.from(widget.cardData);
 
-    // Initialize the AnimationController
     _controller = AnimationController(
       duration: widget.animationDuration,
       vsync: this,
     );
 
-    // Create a CurvedAnimation
     _animation = CurvedAnimation(
       parent: _controller ?? AnimationController(vsync: this),
       curve: Curves.easeInOut,
     );
 
-    // Define the yOffset animation using TweenSequence
     _yOffsetAnimation = TweenSequence<double>([
       TweenSequenceItem<double>(
         tween: Tween<double>(begin: 0.0, end: 0.5),
@@ -323,13 +305,11 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
       ),
     ]).animate(_animation ?? const AlwaysStoppedAnimation(0.0));
 
-    // Define the rotation animation from 0 to -180 degrees
     _rotationAnimation = Tween<double>(
       begin: 0.0,
       end: -180.0,
     ).animate(_animation ?? const AlwaysStoppedAnimation(0.0));
 
-    // Initialize the down drag controller
     _downDragController = AnimationController(
       duration: widget.downDragDuration,
       vsync: this,
@@ -342,18 +322,14 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _dragOffset = _downDragAnimation?.value ?? 0.0;
         });
 
-    // Listen to the animation value to switch cards at 0.5
     _controller?.addListener(() {
-      // Only perform switch if there are multiple cards
       if (_cardData.length > 1) {
-        // Switch cards at midpoint (0.5) of the animation
         if (!_isCardSwitched && (_controller?.value ?? 0.0) >= 0.5) {
           if (_debounceTimer?.isActive ?? false) {
             _isCardSwitched = true;
             return;
           }
 
-          // Move the top card to the back
           var firstCard = _cardData.removeAt(0);
           _poppedCardIndex = widget.cardData.indexOf(firstCard);
           _poppedCardWidget = widget.cardBuilder(
@@ -364,30 +340,12 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _cardData.add(firstCard);
           onCardSwitchVibration();
 
-          // Simpan ke history swipe
           _swipeHistory.add(firstCard);
 
           _isCardSwitched = true;
-          // Fitur back swipe
-          void backSwipe() {
-            if (_swipeHistory.isNotEmpty) {
-              setState(() {
-                T last = _swipeHistory.removeLast();
-                _cardData.remove(last);
-                _cardData.insert(0, last);
-                _updateCardWidgets();
-                if (widget.onCardChange != null) {
-                  widget.onCardChange?.call(
-                    widget.cardData.indexOf(_cardData[0]),
-                  );
-                }
-              });
-            }
-          }
 
           _updateCardWidgets();
 
-          // Trigger the callback with the new top card index
           if (widget.onCardChange != null) {
             widget.onCardChange?.call(widget.cardData.indexOf(_cardData[0]));
           }
@@ -395,15 +353,27 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _debounceTimer = Timer(const Duration(milliseconds: 300), () {});
         }
 
-        // Reset the switch flag when animation resets
         if ((_controller?.value ?? 0.0) == 1.0) {
           _isCardSwitched = false;
           _controller?.reset();
           _hasReachedHalf = false;
         }
       } else {
-        // If only one card, reset the animation
         _controller?.reset();
+        Future.delayed(Duration(milliseconds: 350), () {
+          if (_cardData.length == 1 && mounted) {
+            CustomAlertDialogs.showCompletionDialog(
+              context: context,
+              onRestart: () {
+                setState(() {
+                  _cardData = List.from(widget.cardData);
+                  _swipeHistory.clear();
+                  _updateCardWidgets();
+                });
+              },
+            );
+          }
+        });
       }
     });
 
@@ -432,7 +402,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   }
 
   void _updateCardWidgets() {
-    // Update top card
     if (_cardData.isNotEmpty) {
       _topCardIndex = widget.cardData.indexOf(_cardData[0]);
       _topCardWidget = widget.cardBuilder(context, _topCardIndex ?? 0, 0);
@@ -441,7 +410,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
       _topCardWidget = null;
     }
 
-    // Update second card
     if (_cardData.length > 1) {
       _secondCardIndex = widget.cardData.indexOf(_cardData[1]);
       _secondCardWidget = widget.cardBuilder(context, _secondCardIndex ?? 0, 1);
@@ -450,7 +418,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
       _secondCardWidget = null;
     }
 
-    // Update third card
     if (_cardData.length > 2) {
       _thirdCardIndex = widget.cardData.indexOf(_cardData[2]);
       _thirdCardWidget = widget.cardBuilder(context, _thirdCardIndex ?? 0, 2);
@@ -519,13 +486,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     super.dispose();
   }
 
-  // Handle the start of the vertical drag
   void _onVerticalDragStart(DragStartDetails details) {
     if (_controller?.isAnimating == true ||
         _downDragController?.isAnimating == true ||
-        widget.shouldStartCardCollectionAnimation ||
-        _cardData.length == 1) {
-      // Do not process the gesture if animating or if there's only one card
+        widget.shouldStartCardCollectionAnimation) {
       return;
     }
     _isAnimationBlocked = false;
@@ -536,14 +500,47 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     _hasReachedHalf = false;
   }
 
-  // Update the animation value based on the drag
   void _onVerticalDragUpdate(DragUpdateDetails details) {
     if (_controller?.isAnimating == true ||
         _downDragController?.isAnimating == true ||
         _hasReachedHalf ||
         widget.shouldStartCardCollectionAnimation ||
-        _isAnimationBlocked ||
-        _cardData.length == 1) {
+        _isAnimationBlocked) {
+      return;
+    }
+
+    if (_cardData.length == 1) {
+      double dragDistance = _dragStartPosition - details.globalPosition.dy;
+      if (dragDistance >= 30) {
+        CustomAlertDialogs.showCompletionDialog(
+          context: context,
+          onRestart: () {
+            setState(() {
+              _cardData = List.from(widget.cardData);
+              _swipeHistory.clear();
+              _updateCardWidgets();
+            });
+          },
+        );
+      }
+      return;
+    }
+
+    int lastIndex = widget.cardData.length - 1;
+    if (_topCardIndex == lastIndex) {
+      double dragDistance = _dragStartPosition - details.globalPosition.dy;
+      if (dragDistance >= 30) {
+        CustomAlertDialogs.showSuccessDialog(
+          context: context,
+          onRestart: () {
+            setState(() {
+              _cardData = List.from(widget.cardData);
+              _swipeHistory.clear();
+              _updateCardWidgets();
+            });
+          },
+        );
+      }
       return;
     }
     if (_hasReachedHalf) {
@@ -553,7 +550,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     double dragDistance = _dragStartPosition - details.globalPosition.dy;
 
     if (dragDistance >= 0) {
-      // ...existing code...
       double dragFraction = dragDistance / widget.maxDragDistance;
       double newValue = (_startAnimationValue + dragFraction).clamp(0.0, 1.0);
       if (_controller != null) {
@@ -590,24 +586,20 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           onCardBlockVibration();
           _shouldPlayVibration = false;
         }
-        // Trigger undo/back swipe jika drag ke bawah maksimal
+
         backSwipe();
       }
     }
   }
 
-  // Continue the animation when the drag ends
   void _onVerticalDragEnd(DragEndDetails details) {
     if (_controller?.isAnimating == true ||
         _downDragController?.isAnimating == true ||
         widget.shouldStartCardCollectionAnimation ||
-        _isAnimationBlocked ||
-        _cardData.length == 1) {
-      // Do not process the gesture if animating or if there's only one card
+        _isAnimationBlocked) {
       return;
     }
     if (_dragOffset != 0.0) {
-      // Animate _dragOffset back to zero
       _downDragAnimation = Tween<double>(begin: _dragOffset, end: 0.0).animate(
         CurvedAnimation(
           parent: _downDragController ?? AnimationController(vsync: this),
@@ -634,7 +626,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           }
         }
       } else {
-        // Animate back to the start with adjusted duration
         final int duration =
             ((_controller?.duration?.inMilliseconds ?? 0) *
                     (_controller?.value ?? 0.0))
@@ -681,10 +672,8 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
                     ? _downDragAnimation?.value ?? 0.0
                     : _dragOffset);
 
-            // Undo animation: kartu masuk dari bawah
             double undoYOffset = 0.0;
             if (_isUndoing && _undoAnimation != null) {
-              // Dari 220 ke 0 (masuk ke atas)
               undoYOffset =
                   (1 - _undoAnimation!.value) * widget.maxDragDistance;
             }
@@ -741,7 +730,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     );
   }
 
-  // Build the top card with main animation
   Widget buildTopCard(double yOffset, double rotation) {
     if (_topCardWidget == null) {
       return const SizedBox.shrink();
@@ -754,7 +742,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     return AnimatedBuilder(
       animation: _controller ?? const AlwaysStoppedAnimation(0.0),
       builder: (context, child) {
-        // Calculate scale based on animation value before 0.5
         double scale;
 
         double controllerValue = _controller?.value ?? 0.0;
@@ -763,23 +750,23 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           if (controllerValue <= 0.5 && _cardData.length > 1) {
             if (controllerValue >= 0.45) {
               double progress = (controllerValue - 0.45) / 0.05;
-              scale = 1.0 - 0.05 * progress; // Scale from 1.0 to 0.95
+              scale = 1.0 - 0.05 * progress;
             } else {
               scale = 1.0;
             }
           } else {
-            scale = 0.95; // Maintain scale after 0.5
+            scale = 0.95;
           }
         } else {
           if (controllerValue <= 0.5 && _cardData.length > 1) {
             if (controllerValue >= 0.4) {
               double progress = (controllerValue - 0.4) / 0.1;
-              scale = 1.0 - 0.1 * progress; // Scale from 1.0 to 0.9
+              scale = 1.0 - 0.1 * progress;
             } else {
               scale = 1.0;
             }
           } else {
-            scale = 0.9; // Maintain scale after 0.5
+            scale = 0.9;
           }
         }
 
@@ -800,11 +787,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           child: child,
         );
       },
-      child: cardWidget, // Pass the cardWidget as child to minimize rebuilds
+      child: cardWidget,
     );
   }
 
-  // Build other cards with their animations
   Widget buildCard(int index) {
     if (_cardData.length <= 1 || index >= _cardData.length) {
       return const SizedBox.shrink();
@@ -812,7 +798,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
 
     Widget? cardWidget;
     if (_isCardSwitched) {
-      // After the switch, adjust indices
       if (index == 1) {
         cardWidget = _topCardWidget;
       } else if (index == 2) {
@@ -843,39 +828,30 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
 
         double controllerValue = _controller?.value ?? 0.0;
 
-        // Adjust offsets and scales based on the number of cards
         if (_cardData.length == 2) {
-          // Only two cards, use second card parameters
           if (index == 1) {
-            // Second card
             initialOffset = widget.secondCardOffsetStart;
             initialScale = widget.secondCardScaleStart;
             targetScale = widget.secondCardScaleEnd;
           }
         } else {
-          // Three or more cards
           if (index == 1) {
-            // Second card
             initialOffset = widget.secondCardOffsetStart;
             initialScale = widget.secondCardScaleStart;
             targetScale = widget.secondCardScaleEnd;
           } else if (index == 2) {
-            // Third card
             initialOffset = widget.thirdCardOffsetStart;
             initialScale = widget.thirdCardScaleStart;
             targetScale = widget.thirdCardScaleEnd;
           }
         }
 
-        // Calculate transformations
         double yOffset = initialOffset;
         double scale = initialScale;
 
         if (controllerValue <= 0.5) {
-          // Before switch
           double progress = controllerValue / 0.5;
 
-          // Move down
           if (_cardData.length == 2) {
             yOffset = initialOffset - widget.secondCardOffsetStart * progress;
           } else {
@@ -883,13 +859,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           }
           progress = Curves.easeOut.transform(progress);
 
-          // Maintain initial scales before switch
-          scale = initialScale; // Keep the scale constant
+          scale = initialScale;
         } else {
-          // After switch
           double progress = (controllerValue - 0.5) / 0.5;
 
-          // Adjust yOffset
           if (_cardData.length == 2) {
             yOffset =
                 initialOffset -
@@ -903,7 +876,6 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           }
           progress = Curves.easeOut.transform(progress);
 
-          // Adjust scales after switch
           scale = initialScale + (targetScale - initialScale) * progress;
         }
 
@@ -930,7 +902,7 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           child: child,
         );
       },
-      child: cardWidget, // Pass the cardWidget as child to minimize rebuilds
+      child: cardWidget,
     );
   }
 }
