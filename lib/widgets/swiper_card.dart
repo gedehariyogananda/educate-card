@@ -370,6 +370,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
                   _swipeHistory.clear();
                   _updateCardWidgets();
                 });
+                // Reset index ke 0 di main.dart
+                if (widget.onCardChange != null) {
+                  widget.onCardChange?.call(0);
+                }
               },
             );
           }
@@ -520,6 +524,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
               _swipeHistory.clear();
               _updateCardWidgets();
             });
+            // Reset index ke 0 di main.dart
+            if (widget.onCardChange != null) {
+              widget.onCardChange?.call(0);
+            }
           },
         );
       }
@@ -538,6 +546,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
               _swipeHistory.clear();
               _updateCardWidgets();
             });
+            // Reset index ke 0 di main.dart
+            if (widget.onCardChange != null) {
+              widget.onCardChange?.call(0);
+            }
           },
         );
       }
