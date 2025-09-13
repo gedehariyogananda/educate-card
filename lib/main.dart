@@ -1,47 +1,299 @@
 import 'package:flutter/material.dart';
-import 'package:card_swiper/card_swiper.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'card_data.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/swiper_card.dart';
+import 'models/card_data.dart';
+import 'widgets/flip_card.dart';
+import 'utils/theme_colors.dart';
+import 'screens/tutorial_screen.dart';
 
-void main() {
-  runApp(const MainApp());
-}
+void main() => runApp(const MyApp());
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: EduCardPage(),
-      debugShowCheckedModeBanner: false,
+    return MaterialApp(
+      title: 'EduCard',
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/tutorial': (context) => const TutorialScreen(),
+        '/home': (context) => const HomePage(),
+      },
     );
   }
 }
 
-class EduCardPage extends StatefulWidget {
-  const EduCardPage({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<EduCardPage> createState() => _EduCardPageState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _EduCardPageState extends State<EduCardPage> {
-  final FlutterTts flutterTts = FlutterTts();
-  int currentIndex = 0;
-  bool isSoundOn = true;
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkTutorialStatus();
+  }
+
+  Future<void> _checkTutorialStatus() async {
+    await Future.delayed(Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
+
+    if (mounted) {
+      if (tutorialCompleted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        Navigator.pushReplacementNamed(context, '/tutorial');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: ThemeColors.baseColor,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.school, size: 80, color: ThemeColors.baseColor),
+            ),
+            SizedBox(height: 30),
+            Text(
+              'EduCard',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 1.5,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white70,
+                letterSpacing: 0.5,
+              ),
+            ),
+            SizedBox(height: 50),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  final List<BaseDatas> cards = datas;
+  bool isSoundEnabled = true;
+  late FlutterTts flutterTts;
+  int currentCardIndex = 0;
+  BuildContext? _showcaseContext;
+
+  final GlobalKey _soundButtonKey = GlobalKey();
+  final GlobalKey _menuButtonKey = GlobalKey();
+  final GlobalKey _cardKey = GlobalKey();
+  final GlobalKey _progressKey = GlobalKey();
 
   @override
   void initState() {
     super.initState();
-    _speakCurrentCard();
+    _initTts();
+    _loadLastCardIndex();
   }
 
-  Future<void> _speakCurrentCard() async {
-    await flutterTts.stop();
-    if (isSoundOn) {
-      await flutterTts.speak(eduCards[currentIndex].description);
+  Future<void> _loadLastCardIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedIndex = prefs.getInt('last_card_index') ?? 0;
+      final savedSoundState = prefs.getBool('sound_enabled') ?? true;
+      final tutorialStatus = prefs.getBool('tutorial_completed') ?? false;
+      final showcaseShown = prefs.getBool('showcase_shown') ?? false;
+
+      setState(() {
+        currentCardIndex = savedIndex.clamp(0, cards.length - 1);
+        isSoundEnabled = savedSoundState;
+      });
+
+      if (isSoundEnabled && currentCardIndex < cards.length) {
+        _speak(cards[currentCardIndex].description);
+      }
+
+      if (!showcaseShown && tutorialStatus) {
+        Future.delayed(Duration(milliseconds: 500), () {
+          _startShowcase();
+          prefs.setBool('showcase_shown', true);
+        });
+      }
+    } catch (e) {
+      print('Error loading saved state: $e');
     }
+  }
+
+  Future<void> _saveLastCardIndex() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_card_index', currentCardIndex);
+      await prefs.setBool('sound_enabled', isSoundEnabled);
+    } catch (e) {
+      print('Error saving state: $e');
+    }
+  }
+
+  // Show progress info modal
+  void _showProgressInfo() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.info_outline, color: ThemeColors.baseColor),
+              SizedBox(width: 8),
+              Text('Info Progress'),
+            ],
+          ),
+          content: Text(
+            'Progress pembelajaran Anda disimpan secara otomatis walaupun Anda keluar aplikasi. Anda dapat melanjutkan belajar dari kartu terakhir yang Anda lihat.',
+            style: TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Mengerti',
+                style: TextStyle(color: ThemeColors.baseColor),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show reset dialog
+  void _showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Reset Progress'),
+          content: Text(
+            'Apakah Anda yakin ingin mengulang dari kartu pertama dan melihat tutorial lagi?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resetProgress();
+              },
+              child: Text('Reset', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Reset progress to first card
+  Future<void> _resetProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('last_card_index', 0);
+      await prefs.setBool('tutorial_completed', false);
+      await prefs.setBool('showcase_shown', false);
+
+      setState(() {
+        currentCardIndex = 0;
+      });
+
+      Navigator.pushReplacementNamed(context, '/tutorial');
+
+      if (isSoundEnabled && cards.isNotEmpty) {
+        _speak(cards[0].description);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Progress telah direset ke kartu pertama'),
+          backgroundColor: ThemeColors.baseColor,
+        ),
+      );
+    } catch (e) {
+      print('Error resetting progress: $e');
+    }
+  }
+
+  void _startShowcase() {
+    if (_showcaseContext != null) {
+      ShowCaseWidget.of(_showcaseContext!).startShowCase([
+        _soundButtonKey,
+        _cardKey,
+        _progressKey,
+        _menuButtonKey,
+      ]);
+    }
+  }
+
+  void _initTts() {
+    flutterTts = FlutterTts();
+    flutterTts.setLanguage("id-ID");
+    flutterTts.setSpeechRate(0.5);
+    flutterTts.setPitch(1.0);
+  }
+
+  Future<void> _speak(String text) async {
+    if (isSoundEnabled && text.isNotEmpty) {
+      await flutterTts.speak(text);
+    }
+  }
+
+  void _toggleSound() {
+    setState(() {
+      isSoundEnabled = !isSoundEnabled;
+    });
+    if (!isSoundEnabled) {
+      flutterTts.stop();
+    }
+    _saveLastCardIndex();
   }
 
   @override
@@ -52,215 +304,306 @@ class _EduCardPageState extends State<EduCardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Container(
-            height: 100,
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 30),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF06292), // Merah muda
+    return ShowCaseWidget(
+      builder: (showcaseContext) {
+        _showcaseContext = showcaseContext;
+
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: ThemeColors.baseColor,
+            elevation: 8,
+            shadowColor: ThemeColors.baseColor.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+                bottomLeft: Radius.circular(25),
+                bottomRight: Radius.circular(25),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            toolbarHeight: 70,
+            title: Row(
               children: [
-                const Text(
+                Icon(Icons.school, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
                   'EduCard',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                    letterSpacing: 0.5,
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    isSoundOn ? Icons.volume_up : Icons.volume_off,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      isSoundOn = !isSoundOn;
-                    });
-                    _speakCurrentCard();
-                  },
-                  tooltip: 'Sound On/Off',
                 ),
               ],
             ),
-          ),
-          Expanded(
-            child: Center(
-              child: SizedBox(
-                height: 480,
-                child: Swiper(
-                  itemCount: currentIndex < eduCards.length
-                      ? eduCards.length
-                      : currentIndex + 1,
-                  itemBuilder: (context, index) {
-                    if (index >= eduCards.length) {
-                      // Jika sudah di akhir, tampilkan zonk (tidak ada kartu)
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: Colors.pinkAccent,
-                              size: 64,
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'Progress selesai!',
-                              style: TextStyle(
-                                fontSize: 22,
-                                color: Colors.pinkAccent,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    final card = eduCards[index];
-                    // List pattern belang/random
-                    final List<List<Color>> gradients = [
-                      [Colors.pinkAccent, Colors.orangeAccent],
-                      [Colors.purpleAccent, Colors.pinkAccent],
-                      [Colors.blueAccent, Colors.cyanAccent],
-                      [Colors.amber, Colors.deepOrangeAccent],
-                      [Colors.greenAccent, Colors.tealAccent],
-                      [Colors.indigoAccent, Colors.lightBlueAccent],
-                      [Colors.deepPurpleAccent, Colors.purple],
-                      [Colors.limeAccent, Colors.yellowAccent],
-                    ];
-                    final gradientColors = gradients[index % gradients.length];
-                    return Container(
-                      width: 280,
-                      height: 480,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: gradientColors,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.white, width: 6),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.pinkAccent.withOpacity(0.18),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(18),
-                              topRight: Radius.circular(18),
-                            ),
-                            child: Image.network(
-                              card.imageUrl,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            card.description,
-                            style: const TextStyle(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 4,
-                                  offset: Offset(1, 1),
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  onIndexChanged: (index) async {
-                    setState(() {
-                      currentIndex = index;
-                    });
-                    await _speakCurrentCard();
-                  },
-                  loop: false,
-                  layout: SwiperLayout.STACK,
-                  itemWidth: 280,
-                  itemHeight: 480,
+            actions: [
+              Showcase(
+                key: _soundButtonKey,
+                title: 'Kontrol Suara',
+                description:
+                    'Tekan untuk menghidupkan atau mematikan suara narasi',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
+                targetBorderRadius: BorderRadius.circular(25),
+                child: IconButton(
+                  onPressed: _toggleSound,
+                  icon: Icon(
+                    isSoundEnabled ? Icons.volume_up : Icons.volume_off,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                  tooltip: isSoundEnabled ? 'Matikan Suara' : 'Nyalakan Suara',
                 ),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 32,
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.pink[50],
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.pinkAccent,
-                            width: 2,
+              Showcase(
+                key: _menuButtonKey,
+                title: 'Menu Bantuan',
+                description: 'Akses tutorial dan tips penggunaan',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
+                targetBorderRadius: BorderRadius.circular(25),
+                child: PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert, color: Colors.white, size: 20),
+                  onSelected: (String value) {
+                    if (value == 'tutorial') {
+                      Navigator.pushNamed(context, '/tutorial');
+                    } else if (value == 'showcase') {
+                      _startShowcase();
+                    } else if (value == 'reset') {
+                      _showResetDialog();
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => [
+                    PopupMenuItem<String>(
+                      value: 'tutorial',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.help_outline,
+                            color: ThemeColors.baseColor,
                           ),
-                        ),
+                          SizedBox(width: 8),
+                          Text('Lihat Tutorial'),
+                        ],
                       ),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          double percent = (currentIndex + 1) / eduCards.length;
-                          if (percent > 1.0) percent = 1.0;
-                          return AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            width: constraints.maxWidth * percent,
-                            height: 32,
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'showcase',
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.tips_and_updates,
+                            color: ThemeColors.baseColor,
+                          ),
+                          SizedBox(width: 8),
+                          Text('Tips Penggunaan'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8),
+            ],
+          ),
+          body: Column(
+            children: [
+              SizedBox(height: 20),
+              Expanded(
+                child: Center(
+                  child: Showcase(
+                    key: _cardKey,
+                    title: 'Kartu Pembelajaran',
+                    description:
+                        'Ketuk untuk membalik kartu, swipe atas/bawah untuk navigasi',
+                    titleTextStyle: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    descTextStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black,
+                    ),
+                    targetBorderRadius: BorderRadius.circular(10),
+                    child: CardsSwiperWidget<BaseDatas>(
+                      cardData: cards,
+                      initialIndex: currentCardIndex,
+                      onCardChange: (index) {
+                        setState(() {
+                          currentCardIndex = index;
+                        });
+                        if (index >= 0 && index < cards.length) {
+                          _speak(cards[index].description);
+                        }
+                        _saveLastCardIndex();
+                      },
+                      cardBuilder: (context, index, visibleIndex) {
+                        final BaseDatas card = cards[index];
+                        return FlipCard(
+                          front: Container(
                             decoration: BoxDecoration(
-                              color: Colors.pinkAccent,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          );
-                        },
-                      ),
-                      Positioned.fill(
-                        child: Center(
-                          child: Text(
-                            '${currentIndex + 1} / ${eduCards.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black26,
-                                  blurRadius: 2,
-                                  offset: Offset(1, 1),
+                              borderRadius: BorderRadius.circular(10),
+                              color: ThemeColors.baseColor,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
                                 ),
                               ],
+                            ),
+                            width: 300,
+                            height: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Image.network(
+                                  card.imageUrl,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                ),
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    card.description,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          back: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(10),
+                              color: ThemeColors.baseColor,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            width: 300,
+                            height: 250,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'Q: ${card.question}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  child: Text(
+                                    'A: ${card.answer}',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                      onCardCollectionAnimationComplete: (bool value) {},
+                    ),
+                  ),
+                ),
+              ),
+              Showcase(
+                key: _progressKey,
+                title: 'Progress Pembelajaran',
+                description:
+                    'Menunjukkan kartu ke berapa dan kemajuan belajar Anda',
+                titleTextStyle: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                descTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black,
+                ),
+                targetBorderRadius: BorderRadius.circular(10),
+                child: Container(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${currentCardIndex + 1}/${cards.length}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: ThemeColors.baseColor,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: _showProgressInfo,
+                            child: Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: (currentCardIndex + 1) / cards.length,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: ThemeColors.baseColor,
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                         ),
@@ -268,20 +611,11 @@ class _EduCardPageState extends State<EduCardPage> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Progress Belajar',
-                  style: TextStyle(
-                    color: Colors.pink[400],
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

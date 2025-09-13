@@ -11,6 +11,9 @@ dependencies:
     sdk: flutter
   flutter_tts: ^3.8.5
   card_swiper: ^2.0.4
+  introduction_screen: ^3.1.12
+  showcaseview: ^3.0.0
+  shared_preferences: ^2.2.2
 
 dev_dependencies:
   flutter_test:
