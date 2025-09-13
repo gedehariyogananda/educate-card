@@ -6,6 +6,7 @@ import 'widgets/swiper_card.dart';
 import 'models/card_data.dart';
 import 'widgets/flip_card.dart';
 import 'utils/theme_colors.dart';
+import 'utils/alert_dialogs.dart';
 import 'screens/tutorial_screen.dart';
 
 void main() => runApp(const MyApp());
@@ -176,33 +177,7 @@ class _HomePageState extends State<HomePage> {
 
   // Show progress info modal
   void _showProgressInfo() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.info_outline, color: ThemeColors.baseColor),
-              SizedBox(width: 8),
-              Text('Info Progress'),
-            ],
-          ),
-          content: Text(
-            'Progress pembelajaran Anda disimpan secara otomatis walaupun Anda keluar aplikasi. Anda dapat melanjutkan belajar dari kartu terakhir yang Anda lihat.',
-            style: TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Mengerti',
-                style: TextStyle(color: ThemeColors.baseColor),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+    CustomAlertDialogs.showProgressInfoDialog(context: context);
   }
 
   // Show reset dialog
