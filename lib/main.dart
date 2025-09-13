@@ -166,6 +166,16 @@ class _HomePageState extends State<HomePage> {
       if (isSoundEnabled && currentCardIndex < cards.length) {
         _speak(cards[currentCardIndex].description);
       }
+
+      // Auto start showcase if not shown before and tutorial is completed
+      if (!showcaseShown && tutorialStatus) {
+        // Delay to ensure the UI is built
+        Future.delayed(Duration(milliseconds: 500), () {
+          _startShowcase();
+          // Mark showcase as shown
+          prefs.setBool('showcase_shown', true);
+        });
+      }
     } catch (e) {
       print('Error loading saved state: $e');
     }
