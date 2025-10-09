@@ -137,6 +137,7 @@ class CardsSwiperWidget<T> extends StatefulWidget {
   final double dragDownLimit;
   final double thresholdValue;
   final void Function(int)? onCardChange;
+  final VoidCallback? onAllCardsCompleted;
   final Widget Function(BuildContext context, int index, int visibleIndex)
   cardBuilder;
   final bool shouldStartCardCollectionAnimation;
@@ -168,6 +169,7 @@ class CardsSwiperWidget<T> extends StatefulWidget {
     this.dragDownLimit = -40.0,
     this.thresholdValue = 0.3,
     this.onCardChange,
+    this.onAllCardsCompleted,
     this.topCardOffsetStart = 0.0,
     this.topCardOffsetEnd = -15.0,
     this.topCardScaleStart = 1.0,
@@ -216,8 +218,14 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
   bool _isUndoing = false;
 
   void backSwipe() {
+    print('=== BACKSWIPE DEBUG ===');
+    print('_swipeHistory.length: ${_swipeHistory.length}');
+    print('_cardData.length: ${_cardData.length}');
+    print('_isUndoing: $_isUndoing');
+
     if (_swipeHistory.isNotEmpty && !_isUndoing) {
       T last = _swipeHistory.removeLast();
+      print('Removing from history and adding to front: $last');
       _cardData.remove(last);
       _cardData.insert(0, last);
       _updateCardWidgets();
@@ -241,7 +249,10 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _undoAnimation = null;
         });
       });
+    } else {
+      print('Cannot backSwipe: history empty or already undoing');
     }
+    print('=======================');
   }
 
   Timer? _debounceTimer;
@@ -280,7 +291,16 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
     super.initState();
 
     _cardData = List.from(widget.cardData);
+
+    // Populate swipe history when initialIndex > 0
+    // This ensures user can backswipe after returning to app
     if (widget.initialIndex > 0 && widget.initialIndex < _cardData.length) {
+      // Add cards before initialIndex to history (cards that were already swiped)
+      for (int i = 0; i < widget.initialIndex; i++) {
+        _swipeHistory.add(_cardData[i]);
+      }
+
+      // Reorder _cardData to start from initialIndex
       final reorderedData = <T>[];
       for (int i = widget.initialIndex; i < _cardData.length; i++) {
         reorderedData.add(_cardData[i]);
@@ -366,24 +386,50 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
           _hasReachedHalf = false;
         }
       } else {
-        _controller?.reset();
-        Future.delayed(Duration(milliseconds: 350), () {
-          if (_cardData.length == 1 && mounted) {
-            CustomAlertDialogs.showCompletionDialog(
-              context: context,
-              onRestart: () {
-                setState(() {
-                  _cardData = List.from(widget.cardData);
-                  _swipeHistory.clear();
-                  _updateCardWidgets();
-                });
-                if (widget.onCardChange != null) {
-                  widget.onCardChange?.call(0);
-                }
-              },
-            );
-          }
-        });
+        // Kartu terakhir - user masih bisa backswipe
+        // Hanya tampilkan dialog jika user mencoba swipe up (bukan down untuk back)
+        print('🎴 Di kartu terakhir! _cardData.length: ${_cardData.length}');
+        if ((_controller?.value ?? 0.0) >= widget.thresholdValue) {
+          print(
+            '✅ Threshold tercapai! Controller value: ${_controller?.value}',
+          );
+          _controller?.reset();
+
+          // Delay untuk menampilkan dialog
+          Future.delayed(Duration(milliseconds: 200), () {
+            print('⏰ Delay 200ms selesai');
+            // Cek jika benar-benar di kartu terakhir dan tidak ada card tersisa
+            if (_cardData.length == 1 &&
+                _swipeHistory.length == widget.cardData.length - 1 &&
+                mounted) {
+              print('🎊 Semua kondisi terpenuhi! Menampilkan dialog...');
+              // Tampilkan dialog dengan callback sound
+              CustomAlertDialogs.showCompletionDialog(
+                context: context,
+                onDialogShown: widget.onAllCardsCompleted,
+                onRestart: () {
+                  setState(() {
+                    _cardData = List.from(widget.cardData);
+                    _swipeHistory.clear();
+                    _updateCardWidgets();
+                  });
+                  if (widget.onCardChange != null) {
+                    widget.onCardChange?.call(0);
+                  }
+                },
+              );
+            } else {
+              print('❌ Kondisi tidak terpenuhi!');
+              print('   _cardData.length: ${_cardData.length}');
+              print('   _swipeHistory.length: ${_swipeHistory.length}');
+              print('   widget.cardData.length: ${widget.cardData.length}');
+              print('   mounted: $mounted');
+            }
+          });
+        } else {
+          // Reset controller jika swipe tidak mencapai threshold
+          _controller?.reset();
+        }
       }
     });
 
@@ -519,53 +565,75 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
       return;
     }
 
-    if (_cardData.length == 1) {
-      double dragDistance = _dragStartPosition - details.globalPosition.dy;
-      if (dragDistance >= 30) {
-        CustomAlertDialogs.showCompletionDialog(
-          context: context,
-          onRestart: () {
-            setState(() {
-              _cardData = List.from(widget.cardData);
-              _swipeHistory.clear();
-              _updateCardWidgets();
-            });
-            if (widget.onCardChange != null) {
-              widget.onCardChange?.call(0);
-            }
-          },
-        );
-      }
-      return;
-    }
-
-    int lastIndex = widget.cardData.length - 1;
-    if (_topCardIndex == lastIndex) {
-      double dragDistance = _dragStartPosition - details.globalPosition.dy;
-      if (dragDistance >= 30) {
-        CustomAlertDialogs.showSuccessDialog(
-          context: context,
-          onRestart: () {
-            setState(() {
-              _cardData = List.from(widget.cardData);
-              _swipeHistory.clear();
-              _updateCardWidgets();
-            });
-            if (widget.onCardChange != null) {
-              widget.onCardChange?.call(0);
-            }
-          },
-        );
-      }
-      return;
-    }
-    if (_hasReachedHalf) {
-      return;
-    }
-
     double dragDistance = _dragStartPosition - details.globalPosition.dy;
 
     if (dragDistance >= 0) {
+      // Swiping UP - untuk lanjut ke card berikutnya
+      print('📊 SWIPE UP detected! dragDistance: $dragDistance');
+      print('   Current card index: ${_swipeHistory.length}');
+      print('   Total cards: ${widget.cardData.length}');
+      print(
+        '   Is last card? ${_swipeHistory.length == widget.cardData.length - 1}',
+      );
+
+      // Kondisi yang BENAR: apakah ini kartu TERAKHIR?
+      // Kartu terakhir = _swipeHistory.length == widget.cardData.length - 1
+      // Contoh: 5 kartu total, history length = 4 berarti kartu ke-5 (index 4)
+      if (_swipeHistory.length == widget.cardData.length - 1) {
+        print('✅ INI KARTU TERAKHIR! Checking dragDistance...');
+        if (dragDistance >= 30) {
+          print(
+            '🎊 SWIPE UP di kartu terakhir dengan dragDistance cukup! Menampilkan dialog...',
+          );
+          CustomAlertDialogs.showCompletionDialog(
+            context: context,
+            onDialogShown: widget.onAllCardsCompleted,
+            onRestart: () {
+              setState(() {
+                _cardData = List.from(widget.cardData);
+                _swipeHistory.clear();
+                _updateCardWidgets();
+              });
+              if (widget.onCardChange != null) {
+                widget.onCardChange?.call(0);
+              }
+            },
+          );
+        } else {
+          print('❌ dragDistance terlalu kecil: $dragDistance < 30');
+        }
+        return;
+      } else {
+        print(
+          '❌ Bukan kartu terakhir, masih ada ${widget.cardData.length - _swipeHistory.length - 1} kartu lagi',
+        );
+      }
+
+      // Jika di card terakhir dalam data tapi belum semua di-swipe
+      int lastIndex = widget.cardData.length - 1;
+      if (_topCardIndex == lastIndex && _cardData.length > 1) {
+        if (dragDistance >= 30) {
+          CustomAlertDialogs.showSuccessDialog(
+            context: context,
+            onRestart: () {
+              setState(() {
+                _cardData = List.from(widget.cardData);
+                _swipeHistory.clear();
+                _updateCardWidgets();
+              });
+              if (widget.onCardChange != null) {
+                widget.onCardChange?.call(0);
+              }
+            },
+          );
+        }
+        return;
+      }
+
+      if (_hasReachedHalf) {
+        return;
+      }
+
       double dragFraction = dragDistance / widget.maxDragDistance;
       double newValue = (_startAnimationValue + dragFraction).clamp(0.0, 1.0);
       if (_controller != null) {
@@ -591,14 +659,32 @@ class CardsSwiperWidgetState<T> extends State<CardsSwiperWidget<T>>
         }
       }
     } else {
-      // Dragging down
+      // Dragging DOWN - untuk undo/back ke card sebelumnya
       if (_controller != null) {
         _controller?.value = _startAnimationValue;
       }
+
       double downDragOffset = dragDistance.clamp(widget.dragDownLimit, 0.0);
       _dragOffset = -downDragOffset;
+
+      // Cek apakah ada history untuk di-undo
+      if (_swipeHistory.isEmpty) {
+        // Jika tidak ada history, beri feedback haptic
+        if (downDragOffset <= widget.dragDownLimit / 2 &&
+            _shouldPlayVibration) {
+          print('DRAG DOWN: No history available, cannot backSwipe');
+          onCardBlockVibration();
+          _shouldPlayVibration = false;
+        }
+        return; // Jangan lakukan backSwipe jika tidak ada history
+      }
+
+      // Jika ada history dan mencapai limit, lakukan backSwipe
       if (downDragOffset == widget.dragDownLimit) {
         if (_shouldPlayVibration) {
+          print(
+            'DRAG DOWN: Limit reached, calling backSwipe. History length: ${_swipeHistory.length}',
+          );
           onCardBlockVibration();
           _shouldPlayVibration = false;
         }

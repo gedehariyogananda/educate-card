@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:introduction_screen/introduction_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/theme_colors.dart';
 
 class TutorialScreen extends StatelessWidget {
@@ -14,36 +15,36 @@ class TutorialScreen extends StatelessWidget {
         PageViewModel(
           title: "Selamat Datang di EduCard! 🎓",
           body:
-              "Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.",
-          image: _buildImage('🎯'),
+              "Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan dan mudah dipahami.",
+          image: _buildImageWithLogo(context),
           decoration: _getPageDecoration(),
         ),
         PageViewModel(
           title: "Kontrol Suara 🔊",
           body:
               "Tekan tombol speaker di kanan atas untuk menghidupkan atau mematikan suara. Suara akan membantu Anda mendengar penjelasan setiap kartu.",
-          image: _buildImage('🔊'),
+          image: _buildImage('🔊', Colors.orange),
           decoration: _getPageDecoration(),
         ),
         PageViewModel(
           title: "Navigasi Kartu ⬆️⬇️",
           body:
               "• Swipe ke ATAS untuk melanjutkan ke kartu pembelajaran berikutnya\n• Swipe ke BAWAH untuk kembali ke kartu sebelumnya (undo)",
-          image: _buildImage('👆'),
+          image: _buildImage('👆', Colors.blue),
           decoration: _getPageDecoration(),
         ),
         PageViewModel(
           title: "Flip Kartu 🔄",
           body:
               "Ketuk kartu untuk membalik dan melihat pertanyaan serta jawaban di bagian belakang kartu.",
-          image: _buildImage('🔄'),
+          image: _buildImage('🔄', Colors.purple),
           decoration: _getPageDecoration(),
         ),
         PageViewModel(
           title: "Siap Belajar! 🚀",
           body:
-              "Sekarang Anda sudah siap untuk memulai pembelajaran. Selamat belajar!",
-          image: _buildImage('🚀'),
+              "Sekarang Anda sudah siap untuk memulai pembelajaran. Mari kita mulai petualangan belajar yang seru!",
+          image: _buildImage('🚀', Colors.green),
           decoration: _getPageDecoration(),
         ),
       ],
@@ -106,14 +107,54 @@ class TutorialScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildImage(String emoji) {
-    return Container(
-      padding: EdgeInsets.all(30),
-      decoration: BoxDecoration(
-        color: ThemeColors.baseColor.withOpacity(0.1),
-        shape: BoxShape.circle,
+  Widget _buildImageWithLogo(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: ThemeColors.baseColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: ThemeColors.baseColor.withOpacity(0.2),
+                width: 3,
+              ),
+            ),
+            child: SvgPicture.asset(
+              'assets/logo_flashcard.svg',
+              width: 100,
+              height: 100,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text('🎯', style: TextStyle(fontSize: 50)),
+        ],
       ),
-      child: Text(emoji, style: TextStyle(fontSize: 80)),
+    );
+  }
+
+  Widget _buildImage(String emoji, Color color) {
+    return Container(
+      padding: EdgeInsets.all(35),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color.withOpacity(0.15), color.withOpacity(0.05)],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withOpacity(0.3), width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Text(emoji, style: TextStyle(fontSize: 85)),
     );
   }
 

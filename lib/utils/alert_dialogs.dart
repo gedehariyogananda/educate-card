@@ -5,8 +5,18 @@ class CustomAlertDialogs {
   static void showCompletionDialog({
     required BuildContext context,
     required VoidCallback onRestart,
+    VoidCallback? onDialogShown,
     bool showNoButton = true,
   }) {
+    // Trigger callback saat dialog ditampilkan (untuk sound)
+    print('📢 showCompletionDialog dipanggil');
+    if (onDialogShown != null) {
+      print('🔊 Memanggil onDialogShown callback...');
+      onDialogShown();
+    } else {
+      print('⚠️ onDialogShown adalah NULL!');
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,

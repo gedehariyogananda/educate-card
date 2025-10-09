@@ -46,7 +46,16 @@ class _FlipCardState extends State<FlipCard>
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: _flip,
+      onHorizontalDragEnd: (details) {
+        // Swipe ke kiri untuk buka (flip ke belakang)
+        if (details.primaryVelocity! < 0 && _isFront) {
+          _flip();
+        }
+        // Swipe ke kanan untuk tutup (flip ke depan)
+        else if (details.primaryVelocity! > 0 && !_isFront) {
+          _flip();
+        }
+      },
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {

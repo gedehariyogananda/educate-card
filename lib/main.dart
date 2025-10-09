@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'widgets/swiper_card.dart';
 import 'models/card_data.dart';
 import 'widgets/flip_card.dart';
 import 'utils/theme_colors.dart';
-import 'utils/alert_dialogs.dart';
 import 'screens/tutorial_screen.dart';
+import 'screens/card_detail_screen.dart';
 
 void main() => runApp(const MyApp());
 
@@ -60,51 +61,201 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: ThemeColors.baseColor,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Icon(Icons.school, size: 80, color: ThemeColors.baseColor),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              ThemeColors.baseColor,
+              ThemeColors.baseColor.withOpacity(0.8),
+              Color(0xFFF8BBD0),
+            ],
+            stops: [0.0, 0.6, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated logo container with SVG
+                TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 1000),
+                  curve: Curves.elasticOut,
+                  builder: (context, double value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Transform.rotate(
+                        angle: (1 - value) * 0.5,
+                        child: Container(
+                          padding: EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 25,
+                                offset: Offset(0, 10),
+                                spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/logo_flashcard.svg',
+                            width: 100,
+                            height: 100,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: 32),
+                // App name with animation
+                TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 1100),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Transform.translate(
+                        offset: Offset(0, 25 * (1 - value)),
+                        child: Column(
+                          children: [
+                            Text(
+                              'EduCard',
+                              style: TextStyle(
+                                fontSize: 46,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 2.5,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    offset: Offset(0, 3),
+                                    blurRadius: 10,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.4),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Text(
+                                'Belajar Jadi Menyenangkan',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 36,
+                                vertical: 4,
+                              ),
+                              child: Text(
+                                'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan dan mudah dipahami',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.white.withOpacity(0.95),
+                                  letterSpacing: 0.3,
+                                  height: 1.5,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                SizedBox(height: 48),
+                // Loading indicator with pulse animation
+                TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0, end: 1),
+                  duration: Duration(milliseconds: 1300),
+                  builder: (context, double value, child) {
+                    return Opacity(
+                      opacity: value,
+                      child: Column(
+                        children: [
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Pulsing circle background
+                              TweenAnimationBuilder(
+                                tween: Tween<double>(begin: 0.8, end: 1.2),
+                                duration: Duration(milliseconds: 800),
+                                curve: Curves.easeInOut,
+                                builder: (context, double scale, child) {
+                                  return Transform.scale(
+                                    scale: scale,
+                                    child: Container(
+                                      width: 70,
+                                      height: 70,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onEnd: () {
+                                  // Loop the animation
+                                },
+                              ),
+                              SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                  strokeWidth: 3.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 18),
+                          Text(
+                            'Memuat pembelajaran...',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.92),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-            SizedBox(height: 30),
-            Text(
-              'EduCard',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 1.5,
-              ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white70,
-                letterSpacing: 0.5,
-              ),
-            ),
-            SizedBox(height: 50),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -129,6 +280,182 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey _menuButtonKey = GlobalKey();
   final GlobalKey _cardKey = GlobalKey();
   final GlobalKey _progressKey = GlobalKey();
+  final GlobalKey _instructionButtonKey = GlobalKey();
+
+  void _showInstructionDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, ThemeColors.baseColor.withOpacity(0.05)],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            ThemeColors.baseColor,
+                            ThemeColors.baseColor.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.info_outline,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Cara Penggunaan',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.grey.shade600),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24),
+
+                // Instructions
+                _buildInstructionItem(
+                  Icons.touch_app,
+                  'Ketuk Kartu',
+                  'Lihat detail lengkap dengan deskripsi penuh',
+                  Color(0xFF2196F3),
+                ),
+                SizedBox(height: 16),
+                _buildInstructionItem(
+                  Icons.swipe_left,
+                  'Swipe Kiri ←',
+                  'Balik kartu untuk melihat pertanyaan & jawaban',
+                  Color(0xFFEC407A),
+                ),
+                SizedBox(height: 16),
+                _buildInstructionItem(
+                  Icons.swipe_up,
+                  'Swipe Atas ↑',
+                  'Pindah ke kartu berikutnya',
+                  Color(0xFF66BB6A),
+                ),
+                SizedBox(height: 16),
+                _buildInstructionItem(
+                  Icons.swipe_down,
+                  'Swipe Bawah ↓',
+                  'Kembali ke kartu sebelumnya',
+                  Color(0xFFFF9800),
+                ),
+                SizedBox(height: 20),
+
+                // Close button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ThemeColors.baseColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Mengerti',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInstructionItem(
+    IconData icon,
+    String title,
+    String description,
+    Color color,
+  ) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey.shade600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -175,71 +502,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Show progress info modal
-  void _showProgressInfo() {
-    CustomAlertDialogs.showProgressInfoDialog(context: context);
-  }
-
-  // Show reset dialog
-  void _showResetDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Reset Progress'),
-          content: Text(
-            'Apakah Anda yakin ingin mengulang dari kartu pertama dan melihat tutorial lagi?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resetProgress();
-              },
-              child: Text('Reset', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Reset progress to first card
-  Future<void> _resetProgress() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('last_card_index', 0);
-      await prefs.setBool('tutorial_completed', false);
-      await prefs.setBool('showcase_shown', false);
-
-      setState(() {
-        currentCardIndex = 0;
-      });
-
-      Navigator.pushReplacementNamed(context, '/tutorial');
-
-      if (isSoundEnabled && cards.isNotEmpty) {
-        _speak(cards[0].description);
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Progress telah direset ke kartu pertama'),
-          backgroundColor: ThemeColors.baseColor,
-        ),
-      );
-    } catch (e) {
-      print('Error resetting progress: $e');
-    }
-  }
-
   void _startShowcase() {
     if (_showcaseContext != null) {
       ShowCaseWidget.of(_showcaseContext!).startShowCase([
+        _instructionButtonKey,
         _soundButtonKey,
         _cardKey,
         _progressKey,
@@ -251,13 +517,23 @@ class _HomePageState extends State<HomePage> {
   void _initTts() {
     flutterTts = FlutterTts();
     flutterTts.setLanguage("id-ID");
-    flutterTts.setSpeechRate(0.5);
-    flutterTts.setPitch(1.0);
+    flutterTts.setSpeechRate(0.42); // Lebih lambat dari 0.5 agar lebih jelas
+    flutterTts.setPitch(
+      0.95,
+    ); // Sedikit lebih rendah agar terdengar lebih natural
+    flutterTts.setVolume(1.0); // Volume penuh
   }
 
   Future<void> _speak(String text) async {
     if (isSoundEnabled && text.isNotEmpty) {
-      await flutterTts.speak(text);
+      // Bersihkan karakter khusus yang bisa membuat TTS bingung
+      String cleanedText = text
+          .replaceAll('×', 'kali')
+          .replaceAll('/', ' per ')
+          .replaceAll('·', ' ')
+          .replaceAll('\n\n', '. '); // Ganti baris baru dengan jeda
+
+      await flutterTts.speak(cleanedText);
     }
   }
 
@@ -284,128 +560,228 @@ class _HomePageState extends State<HomePage> {
         _showcaseContext = showcaseContext;
 
         return Scaffold(
-          appBar: AppBar(
-            backgroundColor: ThemeColors.baseColor,
-            elevation: 8,
-            shadowColor: ThemeColors.baseColor.withOpacity(0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              ),
-            ),
-            toolbarHeight: 70,
-            title: Row(
-              children: [
-                Icon(Icons.school, color: Colors.white, size: 28),
-                SizedBox(width: 12),
-                Text(
-                  'EduCard',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              Showcase(
-                key: _soundButtonKey,
-                title: 'Kontrol Suara',
-                description:
-                    'Tekan untuk menghidupkan atau mematikan suara narasi',
-                titleTextStyle: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                descTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black,
-                ),
-                targetBorderRadius: BorderRadius.circular(25),
-                child: IconButton(
-                  onPressed: _toggleSound,
-                  icon: Icon(
-                    isSoundEnabled ? Icons.volume_up : Icons.volume_off,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                  tooltip: isSoundEnabled ? 'Matikan Suara' : 'Nyalakan Suara',
-                ),
-              ),
-              Showcase(
-                key: _menuButtonKey,
-                title: 'Menu Bantuan',
-                description: 'Akses tutorial dan tips penggunaan',
-                titleTextStyle: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-                descTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.black,
-                ),
-                targetBorderRadius: BorderRadius.circular(25),
-                child: PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert, color: Colors.white, size: 20),
-                  onSelected: (String value) {
-                    if (value == 'tutorial') {
-                      Navigator.pushNamed(context, '/tutorial');
-                    } else if (value == 'showcase') {
-                      _startShowcase();
-                    } else if (value == 'reset') {
-                      _showResetDialog();
-                    }
-                  },
-                  itemBuilder: (BuildContext context) => [
-                    PopupMenuItem<String>(
-                      value: 'tutorial',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.help_outline,
-                            color: ThemeColors.baseColor,
-                          ),
-                          SizedBox(width: 8),
-                          Text('Lihat Tutorial'),
-                        ],
-                      ),
-                    ),
-                    PopupMenuItem<String>(
-                      value: 'showcase',
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.tips_and_updates,
-                            color: ThemeColors.baseColor,
-                          ),
-                          SizedBox(width: 8),
-                          Text('Tips Penggunaan'),
-                        ],
-                      ),
-                    ),
+          appBar: PreferredSize(
+            preferredSize: Size.fromHeight(80),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    ThemeColors.baseColor,
+                    ThemeColors.baseColor.withOpacity(0.85),
+                    Color(0xFFE91E63),
                   ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeColors.baseColor.withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                    spreadRadius: 0,
+                  ),
+                ],
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
               ),
-              SizedBox(width: 8),
-            ],
+              child: SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Logo and Title Section
+                      Row(
+                        children: [
+                          Hero(
+                            tag: 'app_logo',
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              padding: EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: SvgPicture.asset(
+                                'assets/logo_flashcard.svg',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 14),
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'EduCard',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      offset: Offset(0, 2),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Belajar Seru',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      // Action Buttons
+                      Row(
+                        children: [
+                          // Instruction button
+                          Showcase(
+                            key: _instructionButtonKey,
+                            title: 'Panduan Interaksi',
+                            description:
+                                'Ketuk untuk melihat cara berinteraksi dengan kartu - swipe, tap, dan navigasi',
+                            titleTextStyle: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            descTextStyle: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black,
+                            ),
+                            targetBorderRadius: BorderRadius.circular(25),
+                            child: Container(
+                              margin: EdgeInsets.only(right: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: IconButton(
+                                onPressed: _showInstructionDialog,
+                                icon: Icon(
+                                  Icons.info_outline,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                tooltip: 'Cara Penggunaan',
+                              ),
+                            ),
+                          ),
+                          Showcase(
+                            key: _soundButtonKey,
+                            title: 'Kontrol Suara',
+                            description:
+                                'Tekan untuk menghidupkan atau mematikan suara narasi',
+                            titleTextStyle: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            descTextStyle: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.black,
+                            ),
+                            targetBorderRadius: BorderRadius.circular(25),
+                            child: Container(
+                              margin: EdgeInsets.only(right: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: IconButton(
+                                onPressed: _toggleSound,
+                                icon: Icon(
+                                  isSoundEnabled
+                                      ? Icons.volume_up
+                                      : Icons.volume_off,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                tooltip: isSoundEnabled
+                                    ? 'Matikan Suara'
+                                    : 'Nyalakan Suara',
+                              ),
+                            ),
+                          ),
+                          Showcase(
+                            key: _menuButtonKey,
+                            title: 'Tips Penggunaan',
+                            titleTextStyle: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            description:
+                                'Tekan untuk melihat tips penggunaan aplikasi',
+                            targetBorderRadius: BorderRadius.circular(25),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: IconButton(
+                                icon: Icon(
+                                  Icons.tips_and_updates,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                tooltip: 'Tips Penggunaan',
+                                onPressed: _startShowcase,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
           body: Column(
             children: [
-              SizedBox(height: 20),
+              SizedBox(height: 10),
               Expanded(
                 child: Center(
                   child: Showcase(
                     key: _cardKey,
                     title: 'Kartu Pembelajaran',
                     description:
-                        'Ketuk untuk membalik kartu, swipe atas/bawah untuk navigasi',
+                        'Ketuk kartu untuk detail, swipe kiri untuk balik, swipe atas/bawah navigasi',
                     titleTextStyle: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -429,93 +805,453 @@ class _HomePageState extends State<HomePage> {
                         }
                         _saveLastCardIndex();
                       },
+                      onAllCardsCompleted: () async {
+                        // Trigger saat user swipe up di kartu terakhir
+                        print('🎉 onAllCardsCompleted DIPANGGIL!');
+                        print('Sound enabled: $isSoundEnabled');
+                        if (isSoundEnabled) {
+                          print('Mencoba memutar sound...');
+                          // STOP dulu TTS yang sedang berjalan
+                          await flutterTts.stop();
+                          // Delay sedikit untuk memastikan TTS berhenti
+                          await Future.delayed(Duration(milliseconds: 300));
+                          // Putar sound celebration
+                          await flutterTts.speak(
+                            "Luar biasa! Anda telah menyelesaikan semua kartu pembelajaran!",
+                          );
+                        }
+                      },
                       cardBuilder: (context, index, visibleIndex) {
                         final BaseDatas card = cards[index];
-                        return FlipCard(
-                          front: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: ThemeColors.baseColor,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
+                        return GestureDetector(
+                          onTap: () {
+                            // Tap untuk buka detail
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                opaque: false,
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) {
+                                      return CardDetailScreen(
+                                        card: card,
+                                        cardIndex: index,
+                                      );
+                                    },
+                              ),
+                            );
+                          },
+                          child: FlipCard(
+                            front: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    ThemeColors.baseColor,
+                                    ThemeColors.baseColor.withOpacity(0.8),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            width: 300,
-                            height: 250,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.network(
-                                  card.imageUrl,
-                                  height: 100,
-                                  fit: BoxFit.cover,
-                                ),
-                                const SizedBox(height: 8),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    card.description,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w500,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: ThemeColors.baseColor.withOpacity(
+                                      0.3,
                                     ),
-                                    textAlign: TextAlign.center,
+                                    blurRadius: 15,
+                                    offset: Offset(0, 8),
+                                    spreadRadius: 2,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          back: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              color: ThemeColors.baseColor,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  blurRadius: 8,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            width: 300,
-                            height: 250,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    'Q: ${card.question}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 18,
-                                      color: Colors.white,
+                                ],
+                              ),
+                              width: 300,
+                              height: 400,
+                              child: Stack(
+                                children: [
+                                  // Background decoration
+                                  Positioned(
+                                    top: -30,
+                                    right: -30,
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text(
-                                    'A: ${card.answer}',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w400,
+                                  Positioned(
+                                    bottom: -40,
+                                    left: -40,
+                                    child: Container(
+                                      width: 150,
+                                      height: 150,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.05),
+                                      ),
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                              ],
+                                  // Main content - Centered
+                                  Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        // Title di atas image
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.15,
+                                                ),
+                                                blurRadius: 8,
+                                                offset: Offset(0, 3),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.stars_rounded,
+                                                color: ThemeColors.baseColor,
+                                                size: 20,
+                                              ),
+                                              SizedBox(width: 8),
+                                              Text(
+                                                card.title,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: ThemeColors.baseColor,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        // Image container
+                                        Container(
+                                          padding: EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              15,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.1,
+                                                ),
+                                                blurRadius: 10,
+                                                offset: Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                            child:
+                                                card.imageUrl.startsWith('http')
+                                                ? Image.network(
+                                                    card.imageUrl,
+                                                    height: 150,
+                                                    width: 200,
+                                                    fit: BoxFit
+                                                        .contain, // Changed from cover to contain
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Container(
+                                                            height: 150,
+                                                            width: 200,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade200,
+                                                            child: Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              size: 50,
+                                                              color: Colors
+                                                                  .grey
+                                                                  .shade400,
+                                                            ),
+                                                          );
+                                                        },
+                                                  )
+                                                : Image.asset(
+                                                    card.imageUrl,
+                                                    height: 150,
+                                                    width: 200,
+                                                    fit: BoxFit
+                                                        .contain, // Changed from cover to contain
+                                                    errorBuilder:
+                                                        (
+                                                          context,
+                                                          error,
+                                                          stackTrace,
+                                                        ) {
+                                                          return Container(
+                                                            height: 150,
+                                                            width: 200,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade200,
+                                                            child: Icon(
+                                                              Icons
+                                                                  .image_not_supported,
+                                                              size: 50,
+                                                              color: Colors
+                                                                  .grey
+                                                                  .shade400,
+                                                            ),
+                                                          );
+                                                        },
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 24,
+                                          ),
+                                          child: Text(
+                                            card.description.length > 80
+                                                ? '${card.description.substring(0, 80)}...'
+                                                : card.description,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              height: 1.4,
+                                              letterSpacing: 0.3,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 3,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
+                            back: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    ThemeColors.baseColor.withOpacity(0.9),
+                                    ThemeColors.baseColor,
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: ThemeColors.baseColor.withOpacity(
+                                      0.3,
+                                    ),
+                                    blurRadius: 15,
+                                    offset: Offset(0, 8),
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              width: 300,
+                              height: 400,
+                              child: Stack(
+                                children: [
+                                  // Background decoration
+                                  Positioned(
+                                    top: -30,
+                                    left: -30,
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: -40,
+                                    right: -40,
+                                    child: Container(
+                                      width: 150,
+                                      height: 150,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.05),
+                                      ),
+                                    ),
+                                  ),
+                                  // Main content - Centered
+                                  Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(24),
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.15,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              Icons.quiz,
+                                              color: Colors.white,
+                                              size: 40,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          Container(
+                                            padding: EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(
+                                                0.15,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(15),
+                                              border: Border.all(
+                                                color: Colors.white.withOpacity(
+                                                  0.3,
+                                                ),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        'Q',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                          color: ThemeColors
+                                                              .baseColor,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Text(
+                                                        card.question,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 18,
+                                                          color: Colors.white,
+                                                          height: 1.3,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 20),
+                                                Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          EdgeInsets.symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 4,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Colors.greenAccent,
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              6,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        'A',
+                                                        style: TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 14,
+                                                          color: Colors
+                                                              .green
+                                                              .shade900,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Text(
+                                                        card.answer,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          height: 1.4,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ), // Close FlipCard
+                        ); // Close GestureDetector
                       },
                       onCardCollectionAnimationComplete: (bool value) {},
                     ),
@@ -539,47 +1275,111 @@ class _HomePageState extends State<HomePage> {
                 ),
                 targetBorderRadius: BorderRadius.circular(10),
                 child: Container(
-                  padding: EdgeInsets.all(20),
+                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                  margin: EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
+                  ),
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            '${currentCardIndex + 1}/${cards.length}',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: ThemeColors.baseColor,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: ThemeColors.baseColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.analytics_outlined,
+                                  size: 20,
+                                  color: ThemeColors.baseColor,
+                                ),
+                              ),
+                              SizedBox(width: 12),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Progress Belajar',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+                                  Text(
+                                    '${currentCardIndex + 1} dari ${cards.length} Kartu',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: ThemeColors.baseColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: _showProgressInfo,
-                            child: Icon(
-                              Icons.info_outline,
-                              size: 16,
-                              color: Colors.grey.shade600,
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: ThemeColors.baseColor,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              '${((currentCardIndex + 1) / cards.length * 100).toStringAsFixed(0)}%',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 12),
+                      SizedBox(height: 16),
                       Container(
                         width: double.infinity,
-                        height: 8,
+                        height: 10,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(4),
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(5),
                         ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: (currentCardIndex + 1) / cards.length,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: ThemeColors.baseColor,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(5),
+                          child: Stack(
+                            children: [
+                              FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor:
+                                    (currentCardIndex + 1) / cards.length,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        ThemeColors.baseColor,
+                                        ThemeColors.baseColor.withOpacity(0.7),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -587,6 +1387,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+              SizedBox(height: 20),
             ],
           ),
         );
