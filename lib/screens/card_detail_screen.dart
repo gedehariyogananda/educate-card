@@ -102,8 +102,8 @@ class _CardDetailScreenState extends State<CardDetailScreen>
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        Color(0xFFEC407A),
-                                        Color(0xFFF48FB1),
+                                        Color(0xFF3F51B5), // Indigo
+                                        Color(0xFF5C6BC0), // Light Indigo
                                       ],
                                     ),
                                     borderRadius: BorderRadius.circular(20),
@@ -132,14 +132,14 @@ class _CardDetailScreenState extends State<CardDetailScreen>
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Color(0xFFEC407A),
-                                      Color(0xFFF48FB1),
+                                      Color(0xFF3F51B5), // Indigo
+                                      Color(0xFF5C6BC0), // Light Indigo
                                     ],
                                   ),
                                   borderRadius: BorderRadius.circular(15),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Color(0xFFEC407A).withOpacity(0.3),
+                                      color: Color(0xFF3F51B5).withOpacity(0.3),
                                       blurRadius: 8,
                                       offset: Offset(0, 4),
                                     ),
@@ -207,7 +207,7 @@ class _CardDetailScreenState extends State<CardDetailScreen>
                                                     child:
                                                         CircularProgressIndicator(
                                                           color: Color(
-                                                            0xFFEC407A,
+                                                            0xFF3F51B5, // Indigo
                                                           ),
                                                         ),
                                                   ),

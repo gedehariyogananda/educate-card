@@ -9,6 +9,7 @@ import 'widgets/flip_card.dart';
 import 'utils/theme_colors.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/card_detail_screen.dart';
+import 'screens/menu_screen.dart';
 
 void main() => runApp(const MyApp());
 
@@ -18,11 +19,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EduCard',
+      title: 'MoulsivyEdu',
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialScreen(),
+        '/menu': (context) => const MenuScreen(),
         '/home': (context) => const HomePage(),
       },
     );
@@ -48,12 +50,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final prefs = await SharedPreferences.getInstance();
     final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
+    final hasExited = prefs.getBool('has_exited_once') ?? false;
 
     if (mounted) {
-      if (tutorialCompleted) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
+      if (!tutorialCompleted) {
+        // Belum onboarding -> ke tutorial
         Navigator.pushReplacementNamed(context, '/tutorial');
+      } else if (hasExited) {
+        // Sudah pernah exit -> ke menu
+        Navigator.pushReplacementNamed(context, '/menu');
+      } else {
+        // Baru selesai onboarding, belum pernah exit -> langsung ke home
+        Navigator.pushReplacementNamed(context, '/home');
       }
     }
   }
@@ -69,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> {
             colors: [
               ThemeColors.baseColor,
               ThemeColors.baseColor.withOpacity(0.8),
-              Color(0xFFF8BBD0),
+              Color(0xFFBBDEFB), // Light Blue
             ],
             stops: [0.0, 0.6, 1.0],
           ),
@@ -128,7 +136,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         child: Column(
                           children: [
                             Text(
-                              'EduCard',
+                              'MoulsivyEdu',
                               style: TextStyle(
                                 fontSize: 46,
                                 fontWeight: FontWeight.bold,
@@ -348,28 +356,28 @@ class _HomePageState extends State<HomePage> {
                   Icons.touch_app,
                   'Ketuk Kartu',
                   'Lihat detail lengkap dengan deskripsi penuh',
-                  Color(0xFF2196F3),
+                  Color(0xFF2196F3), // Blue - keep as is
                 ),
                 SizedBox(height: 16),
                 _buildInstructionItem(
                   Icons.swipe_left,
                   'Swipe Kiri ←',
                   'Balik kartu untuk melihat pertanyaan & jawaban',
-                  Color(0xFFEC407A),
+                  Color(0xFF3F51B5), // Indigo instead of pink
                 ),
                 SizedBox(height: 16),
                 _buildInstructionItem(
                   Icons.swipe_up,
                   'Swipe Atas ↑',
                   'Pindah ke kartu berikutnya',
-                  Color(0xFF66BB6A),
+                  Color(0xFF66BB6A), // Green - keep as is
                 ),
                 SizedBox(height: 16),
                 _buildInstructionItem(
                   Icons.swipe_down,
                   'Swipe Bawah ↓',
                   'Kembali ke kartu sebelumnya',
-                  Color(0xFFFF9800),
+                  Color(0xFFFF9800), // Orange - keep as is
                 ),
                 SizedBox(height: 20),
 
@@ -462,6 +470,14 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _initTts();
     _loadLastCardIndex();
+    _setHasOpenedApp(); // Set flag bahwa user sudah pernah masuk home
+  }
+
+  Future<void> _setHasOpenedApp() async {
+    // Set flag bahwa user sudah pernah buka aplikasi (masuk ke home page)
+    // Sehingga next time akan muncul menu screen
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_exited_once', true);
   }
 
   Future<void> _loadLastCardIndex() async {
@@ -477,12 +493,15 @@ class _HomePageState extends State<HomePage> {
         isSoundEnabled = savedSoundState;
       });
 
+      // Delay sedikit untuk animasi countdown selesai, baru speak
+      await Future.delayed(Duration(milliseconds: 500));
+
       if (isSoundEnabled && currentCardIndex < cards.length) {
         _speak(cards[currentCardIndex].description);
       }
 
       if (!showcaseShown && tutorialStatus) {
-        Future.delayed(Duration(milliseconds: 500), () {
+        Future.delayed(Duration(milliseconds: 1000), () {
           _startShowcase();
           prefs.setBool('showcase_shown', true);
         });
@@ -547,6 +566,237 @@ class _HomePageState extends State<HomePage> {
     _saveLastCardIndex();
   }
 
+  void _showCategoryStats() {
+    final momentumCards = cards
+        .where((card) => card.category == CardCategory.momentum)
+        .length;
+    final impulsCards = cards
+        .where((card) => card.category == CardCategory.impuls)
+        .length;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, ThemeColors.baseColor.withOpacity(0.05)],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            ThemeColors.baseColor,
+                            ThemeColors.baseColor.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.category_rounded,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Statistik Kategori',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(Icons.close, color: Colors.grey.shade600),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24),
+                // Total Cards
+                Container(
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ThemeColors.baseColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ThemeColors.baseColor.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.dashboard_rounded,
+                        color: ThemeColors.baseColor,
+                        size: 28,
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        'Total: ${cards.length} Kartu',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeColors.baseColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 20),
+                // Momentum Category
+                _buildCategoryItem(
+                  'Momentum',
+                  momentumCards,
+                  cards.length,
+                  Color(0xFF42A5F5), // Blue
+                  Icons.speed_rounded,
+                ),
+                SizedBox(height: 16),
+                // Impuls Category
+                _buildCategoryItem(
+                  'Impuls',
+                  impulsCards,
+                  cards.length,
+                  Color(0xFF66BB6A), // Green
+                  Icons.flash_on_rounded,
+                ),
+                SizedBox(height: 24),
+                // Close Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ThemeColors.baseColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Tutup',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryItem(
+    String categoryName,
+    int count,
+    int total,
+    Color color,
+    IconData icon,
+  ) {
+    double percentage = (count / total * 100);
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      categoryName,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      '$count dari $total kartu (${percentage.toStringAsFixed(0)}%)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12),
+          // Progress Bar
+          Container(
+            width: double.infinity,
+            height: 8,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: count / total,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color, color.withOpacity(0.7)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     flutterTts.stop();
@@ -561,7 +811,7 @@ class _HomePageState extends State<HomePage> {
 
         return Scaffold(
           appBar: PreferredSize(
-            preferredSize: Size.fromHeight(80),
+            preferredSize: Size.fromHeight(100),
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -570,7 +820,7 @@ class _HomePageState extends State<HomePage> {
                   colors: [
                     ThemeColors.baseColor,
                     ThemeColors.baseColor.withOpacity(0.85),
-                    Color(0xFFE91E63),
+                    Color(0xFF5C6BC0), // Light Indigo
                   ],
                 ),
                 boxShadow: [
@@ -592,74 +842,46 @@ class _HomePageState extends State<HomePage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Logo and Title Section
-                      Row(
+                      // Title Section
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Hero(
-                            tag: 'app_logo',
-                            child: Container(
-                              width: 48,
-                              height: 48,
-                              padding: EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: SvgPicture.asset(
-                                'assets/logo_flashcard.svg',
-                                fit: BoxFit.contain,
-                              ),
+                          Text(
+                            'MoulsivyEdu',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  offset: Offset(0, 2),
+                                  blurRadius: 4,
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(width: 14),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'EduCard',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      offset: Offset(0, 2),
-                                      blurRadius: 4,
-                                    ),
-                                  ],
-                                ),
+                          SizedBox(height: 2),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Momentum & Impuls',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
                               ),
-                              SizedBox(height: 2),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.25),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Belajar Seru',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
@@ -889,6 +1111,47 @@ class _HomePageState extends State<HomePage> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Colors.white.withOpacity(0.05),
+                                      ),
+                                    ),
+                                  ),
+                                  // Category Badge (pojok kanan atas)
+                                  Positioned(
+                                    top: 16,
+                                    right: 16,
+                                    child: Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            card.category ==
+                                                CardCategory.momentum
+                                            ? Color(
+                                                0xFF42A5F5,
+                                              ) // Blue for Momentum
+                                            : Color(
+                                                0xFF66BB6A,
+                                              ), // Green for Impuls
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(
+                                              0.2,
+                                            ),
+                                            blurRadius: 6,
+                                            offset: Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Text(
+                                        card.categoryName,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          letterSpacing: 0.5,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1274,119 +1537,126 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black,
                 ),
                 targetBorderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: ThemeColors.baseColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  Icons.analytics_outlined,
-                                  size: 20,
-                                  color: ThemeColors.baseColor,
-                                ),
-                              ),
-                              SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Progress Belajar',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  SizedBox(height: 2),
-                                  Text(
-                                    '${currentCardIndex + 1} dari ${cards.length} Kartu',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: ThemeColors.baseColor,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: ThemeColors.baseColor,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              '${((currentCardIndex + 1) / cards.length * 100).toStringAsFixed(0)}%',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(5),
+                child: GestureDetector(
+                  onTap: _showCategoryStats,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+                    margin: EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: Offset(0, 2),
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(5),
-                          child: Stack(
-                            children: [
-                              FractionallySizedBox(
-                                alignment: Alignment.centerLeft,
-                                widthFactor:
-                                    (currentCardIndex + 1) / cards.length,
-                                child: Container(
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        ThemeColors.baseColor,
-                                        ThemeColors.baseColor.withOpacity(0.7),
-                                      ],
+                                    color: ThemeColors.baseColor.withOpacity(
+                                      0.1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.analytics_outlined,
+                                    size: 20,
+                                    color: ThemeColors.baseColor,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Progress Belajar',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      '${currentCardIndex + 1} dari ${cards.length} Kartu',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: ThemeColors.baseColor,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: ThemeColors.baseColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${((currentCardIndex + 1) / cards.length * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 16),
+                        Container(
+                          width: double.infinity,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(5),
+                            child: Stack(
+                              children: [
+                                FractionallySizedBox(
+                                  alignment: Alignment.centerLeft,
+                                  widthFactor:
+                                      (currentCardIndex + 1) / cards.length,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          ThemeColors.baseColor,
+                                          ThemeColors.baseColor.withOpacity(
+                                            0.7,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                      ],
+                    ),
+                  ), // Close Container
+                ), // Close GestureDetector
+              ), // Close Showcase
               SizedBox(height: 20),
             ],
           ),

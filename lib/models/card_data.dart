@@ -1,9 +1,12 @@
+enum CardCategory { momentum, impuls }
+
 class BaseDatas {
   final String title;
   final String imageUrl;
   final String description;
   final String question;
   final String answer;
+  final CardCategory category;
 
   BaseDatas({
     required this.title,
@@ -11,13 +14,24 @@ class BaseDatas {
     required this.description,
     required this.question,
     required this.answer,
+    required this.category,
   });
+
+  String get categoryName {
+    switch (category) {
+      case CardCategory.momentum:
+        return 'Momentum';
+      case CardCategory.impuls:
+        return 'Impuls';
+    }
+  }
 }
 
 final List<BaseDatas> datas = [
   BaseDatas(
     title: 'Momentum',
     imageUrl: 'assets/resources/gambar-momentum.png',
+    category: CardCategory.momentum,
     description:
         '1. Momentum adalah kelembaman atau inersia benda dalam gerak, juga dapat diartikan sebagai ukuran mudah atau sulitnya benda dihentikan. Semakin mudah benda itu dihentikan dari geraknya maka semakin kecil momentumnya dan sebaliknya.\n\n'
         '2. p = m × v dengan p = momentum (kg m per s atau Ns), m = massa (kg), v = kecepatan (m per s)\n\n'
@@ -27,41 +41,48 @@ final List<BaseDatas> datas = [
         'p = m × v, dimana p adalah momentum (kg·m/s atau Ns), m adalah massa (kg), dan v adalah kecepatan (m/s)',
   ),
   BaseDatas(
-    title: 'Geografi Indonesia',
+    title: 'Impuls',
     imageUrl: 'https://picsum.photos/300/200?random=1',
+    category: CardCategory.impuls,
     description:
-        'Indonesia adalah negara kepulauan terbesar di dunia dengan lebih dari 17.000 pulau.',
-    question: 'Apa ibu kota Indonesia?',
-    answer: 'Jakarta',
+        'Impuls adalah perubahan momentum yang dialami oleh suatu benda. Impuls sama dengan gaya dikali waktu.',
+    question: 'Apa rumus impuls?',
+    answer: 'I = F × Δt atau I = Δp',
   ),
   BaseDatas(
-    title: 'Matematika Dasar',
+    title: 'Momentum Linear',
     imageUrl: 'https://picsum.photos/300/200?random=2',
-    description: 'Penjumlahan adalah operasi dasar dalam matematika.',
-    question: '2 + 2 = ?',
-    answer: '4',
+    category: CardCategory.momentum,
+    description:
+        'Momentum linear adalah hasil kali massa dengan kecepatan benda.',
+    question: 'Satuan momentum adalah?',
+    answer: 'kg·m/s atau N·s',
   ),
   BaseDatas(
-    title: 'Sains Alam',
+    title: 'Hukum Kekekalan Momentum',
     imageUrl: 'https://picsum.photos/300/200?random=3',
+    category: CardCategory.momentum,
     description:
-        'Langit terlihat biru karena hamburan cahaya matahari di atmosfer.',
-    question: 'Warna langit saat cerah?',
-    answer: 'Biru',
+        'Momentum total sistem tertutup sebelum dan sesudah tumbukan adalah sama.',
+    question: 'Apa bunyi hukum kekekalan momentum?',
+    answer: 'Momentum total sebelum = Momentum total sesudah',
   ),
   BaseDatas(
-    title: 'Sastra Dunia',
+    title: 'Impuls Gaya',
     imageUrl: 'https://picsum.photos/300/200?random=4',
+    category: CardCategory.impuls,
     description:
-        'Harry Potter adalah serial novel fantasi yang sangat populer.',
-    question: 'Siapa penulis "Harry Potter"?',
-    answer: 'J.K. Rowling',
+        'Impuls adalah hasil kali gaya dengan selang waktu gaya bekerja.',
+    question: 'Satuan impuls adalah?',
+    answer: 'N·s (Newton sekon)',
   ),
   BaseDatas(
-    title: 'Astronomi',
+    title: 'Tumbukan',
     imageUrl: 'https://picsum.photos/300/200?random=5',
-    description: 'Merkurius adalah planet terkecil di tata surya kita.',
-    question: 'Planet terdekat Matahari?',
-    answer: 'Merkurius',
+    category: CardCategory.momentum,
+    description:
+        'Tumbukan dapat bersifat elastis, tidak elastis, atau sebagian elastis.',
+    question: 'Sebutkan jenis-jenis tumbukan!',
+    answer: 'Elastis sempurna, tidak elastis, dan sebagian elastis',
   ),
 ];

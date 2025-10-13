@@ -13,7 +13,7 @@ class TutorialScreen extends StatelessWidget {
       globalBackgroundColor: Colors.white,
       pages: [
         PageViewModel(
-          title: "Selamat Datang di EduCard! 🎓",
+          title: "Selamat Datang di MoulsivyEdu! 🎓",
           body:
               "Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan dan mudah dipahami.",
           image: _buildImageWithLogo(context),
@@ -186,10 +186,10 @@ class TutorialScreen extends StatelessWidget {
     print('Tutorial completed, saving to SharedPreferences: true');
     final saved = prefs.getBool('tutorial_completed') ?? false;
     print('Verification - SharedPreferences value: $saved');
-    print('Navigating to: /home');
+    print('Navigating to: /home (first time after onboarding)');
     print('===========================');
 
-    // Navigate to home screen
+    // Navigate langsung ke home screen (pertama kali setelah onboarding)
     if (context.mounted) {
       Navigator.of(context).pushReplacementNamed('/home');
     }
