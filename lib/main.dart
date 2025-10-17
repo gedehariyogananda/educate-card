@@ -8,7 +8,6 @@ import 'models/card_data.dart';
 import 'widgets/flip_card.dart';
 import 'utils/theme_colors.dart';
 import 'screens/tutorial_screen.dart';
-import 'screens/card_detail_screen.dart';
 import 'screens/menu_screen.dart';
 
 void main() => runApp(const MyApp());
@@ -353,17 +352,17 @@ class _HomePageState extends State<HomePage> {
 
                 // Instructions
                 _buildInstructionItem(
-                  Icons.touch_app,
-                  'Ketuk Kartu',
-                  'Lihat detail lengkap dengan deskripsi penuh',
-                  Color(0xFF2196F3), // Blue - keep as is
+                  Icons.swipe_left,
+                  'Swipe Kiri ←',
+                  'Balik kartu untuk melihat deskripsi pembelajaran',
+                  Color(0xFF3F51B5), // Indigo instead of pink
                 ),
                 SizedBox(height: 16),
                 _buildInstructionItem(
-                  Icons.swipe_left,
-                  'Swipe Kiri ←',
-                  'Balik kartu untuk melihat pertanyaan & jawaban',
-                  Color(0xFF3F51B5), // Indigo instead of pink
+                  Icons.swipe_right,
+                  'Swipe Kanan →',
+                  'Pindah ke kartu sebelumnya',
+                  Color(0xFF2196F3), // Blue
                 ),
                 SizedBox(height: 16),
                 _buildInstructionItem(
@@ -1003,7 +1002,7 @@ class _HomePageState extends State<HomePage> {
                     key: _cardKey,
                     title: 'Kartu Pembelajaran',
                     description:
-                        'Ketuk kartu untuk detail, swipe kiri untuk balik, swipe atas/bawah navigasi',
+                        'Ketuk kartu untuk membalik, swipe kiri untuk balik, swipe atas/bawah untuk navigasi',
                     titleTextStyle: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.bold,
@@ -1045,476 +1044,315 @@ class _HomePageState extends State<HomePage> {
                       },
                       cardBuilder: (context, index, visibleIndex) {
                         final BaseDatas card = cards[index];
-                        return GestureDetector(
-                          onTap: () {
-                            // Tap untuk buka detail
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                opaque: false,
-                                pageBuilder:
-                                    (context, animation, secondaryAnimation) {
-                                      return CardDetailScreen(
-                                        card: card,
-                                        cardIndex: index,
-                                      );
-                                    },
-                              ),
-                            );
-                          },
-                          child: FlipCard(
-                            front: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    ThemeColors.baseColor,
-                                    ThemeColors.baseColor.withOpacity(0.8),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: ThemeColors.baseColor.withOpacity(
-                                      0.3,
-                                    ),
-                                    blurRadius: 15,
-                                    offset: Offset(0, 8),
-                                    spreadRadius: 2,
-                                  ),
+                        return FlipCard(
+                          front: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  ThemeColors.baseColor,
+                                  ThemeColors.baseColor.withOpacity(0.8),
                                 ],
                               ),
-                              width: 300,
-                              height: 400,
-                              child: Stack(
-                                children: [
-                                  // Background decoration
-                                  Positioned(
-                                    top: -30,
-                                    right: -30,
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withOpacity(0.1),
-                                      ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ThemeColors.baseColor.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: Offset(0, 8),
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            width: 300,
+                            height: 400,
+                            child: Stack(
+                              children: [
+                                // Background decoration
+                                Positioned(
+                                  top: -30,
+                                  right: -30,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.1),
                                     ),
                                   ),
-                                  Positioned(
-                                    bottom: -40,
-                                    left: -40,
-                                    child: Container(
-                                      width: 150,
-                                      height: 150,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withOpacity(0.05),
-                                      ),
+                                ),
+                                Positioned(
+                                  bottom: -40,
+                                  left: -40,
+                                  child: Container(
+                                    width: 150,
+                                    height: 150,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.05),
                                     ),
                                   ),
-                                  // Category Badge (pojok kanan atas)
-                                  Positioned(
-                                    top: 16,
-                                    right: 16,
-                                    child: Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            card.category ==
-                                                CardCategory.momentum
-                                            ? Color(
-                                                0xFF42A5F5,
-                                              ) // Blue for Momentum
-                                            : Color(
-                                                0xFF66BB6A,
-                                              ), // Green for Impuls
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withOpacity(
-                                              0.2,
-                                            ),
-                                            blurRadius: 6,
-                                            offset: Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Text(
-                                        card.categoryName,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          letterSpacing: 0.5,
-                                        ),
-                                      ),
+                                ),
+                                // Category Badge (pojok kanan atas)
+                                Positioned(
+                                  top: 16,
+                                  right: 16,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
                                     ),
-                                  ),
-                                  // Main content - Centered
-                                  Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        // Title di atas image
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 10,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.15,
-                                                ),
-                                                blurRadius: 8,
-                                                offset: Offset(0, 3),
-                                              ),
-                                            ],
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.stars_rounded,
-                                                color: ThemeColors.baseColor,
-                                                size: 20,
-                                              ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                card.title,
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: ThemeColors.baseColor,
-                                                  letterSpacing: 0.5,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        // Image container
-                                        Container(
-                                          padding: EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              15,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(
-                                                  0.1,
-                                                ),
-                                                blurRadius: 10,
-                                                offset: Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                            child:
-                                                card.imageUrl.startsWith('http')
-                                                ? Image.network(
-                                                    card.imageUrl,
-                                                    height: 150,
-                                                    width: 200,
-                                                    fit: BoxFit
-                                                        .contain, // Changed from cover to contain
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return Container(
-                                                            height: 150,
-                                                            width: 200,
-                                                            color: Colors
-                                                                .grey
-                                                                .shade200,
-                                                            child: Icon(
-                                                              Icons
-                                                                  .image_not_supported,
-                                                              size: 50,
-                                                              color: Colors
-                                                                  .grey
-                                                                  .shade400,
-                                                            ),
-                                                          );
-                                                        },
-                                                  )
-                                                : Image.asset(
-                                                    card.imageUrl,
-                                                    height: 150,
-                                                    width: 200,
-                                                    fit: BoxFit
-                                                        .contain, // Changed from cover to contain
-                                                    errorBuilder:
-                                                        (
-                                                          context,
-                                                          error,
-                                                          stackTrace,
-                                                        ) {
-                                                          return Container(
-                                                            height: 150,
-                                                            width: 200,
-                                                            color: Colors
-                                                                .grey
-                                                                .shade200,
-                                                            child: Icon(
-                                                              Icons
-                                                                  .image_not_supported,
-                                                              size: 50,
-                                                              color: Colors
-                                                                  .grey
-                                                                  .shade400,
-                                                            ),
-                                                          );
-                                                        },
-                                                  ),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Padding(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                          ),
-                                          child: Text(
-                                            card.description.length > 80
-                                                ? '${card.description.substring(0, 80)}...'
-                                                : card.description,
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              height: 1.4,
-                                              letterSpacing: 0.3,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 3,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          card.category == CardCategory.momentum
+                                          ? Color(
+                                              0xFF42A5F5,
+                                            ) // Blue for Momentum
+                                          : Color(
+                                              0xFF66BB6A,
+                                            ), // Green for Impuls
+                                      borderRadius: BorderRadius.circular(12),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.2),
+                                          blurRadius: 6,
+                                          offset: Offset(0, 2),
                                         ),
                                       ],
                                     ),
+                                    child: Text(
+                                      card.categoryName,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
                                   ),
-                                ],
-                              ),
-                            ),
-                            back: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    ThemeColors.baseColor.withOpacity(0.9),
-                                    ThemeColors.baseColor,
-                                  ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: ThemeColors.baseColor.withOpacity(
-                                      0.3,
-                                    ),
-                                    blurRadius: 15,
-                                    offset: Offset(0, 8),
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                              width: 300,
-                              height: 400,
-                              child: Stack(
-                                children: [
-                                  // Background decoration
-                                  Positioned(
-                                    top: -30,
-                                    left: -30,
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withOpacity(0.1),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    bottom: -40,
-                                    right: -40,
-                                    child: Container(
-                                      width: 150,
-                                      height: 150,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withOpacity(0.05),
-                                      ),
-                                    ),
-                                  ),
-                                  // Main content - Centered
-                                  Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(24),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.center,
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            padding: EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
-                                                0.15,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Icon(
-                                              Icons.quiz,
-                                              color: Colors.white,
-                                              size: 40,
-                                            ),
+                                // Main content - Centered
+                                Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Title di atas image
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: 20,
+                                          vertical: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
-                                          const SizedBox(height: 24),
-                                          Container(
-                                            padding: EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
                                                 0.15,
                                               ),
-                                              borderRadius:
-                                                  BorderRadius.circular(15),
-                                              border: Border.all(
-                                                color: Colors.white.withOpacity(
-                                                  0.3,
-                                                ),
-                                                width: 1,
+                                              blurRadius: 8,
+                                              offset: Offset(0, 3),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.stars_rounded,
+                                              color: ThemeColors.baseColor,
+                                              size: 20,
+                                            ),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              card.title,
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: ThemeColors.baseColor,
+                                                letterSpacing: 0.5,
                                               ),
                                             ),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Row(
-                                                  children: [
-                                                    Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 4,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.white,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        'Q',
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
-                                                          color: ThemeColors
-                                                              .baseColor,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Text(
-                                                        card.question,
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 18,
-                                                          color: Colors.white,
-                                                          height: 1.3,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 20),
-                                                Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Container(
-                                                      padding:
-                                                          EdgeInsets.symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 4,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            Colors.greenAccent,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        'A',
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          fontSize: 14,
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      // Image container (no tap action)
+                                      Container(
+                                        padding: EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            15,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.1,
+                                              ),
+                                              blurRadius: 10,
+                                              offset: Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                          child:
+                                              card.imageUrl.startsWith('http')
+                                              ? Image.network(
+                                                  card.imageUrl,
+                                                  height: 150,
+                                                  width: 200,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Container(
+                                                          height: 150,
+                                                          width: 200,
                                                           color: Colors
-                                                              .green
-                                                              .shade900,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Text(
-                                                        card.answer,
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          height: 1.4,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
+                                                              .grey
+                                                              .shade200,
+                                                          child: Icon(
+                                                            Icons
+                                                                .image_not_supported,
+                                                            size: 50,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade400,
+                                                          ),
+                                                        );
+                                                      },
+                                                )
+                                              : Image.asset(
+                                                  card.imageUrl,
+                                                  height: 150,
+                                                  width: 200,
+                                                  fit: BoxFit.contain,
+                                                  errorBuilder:
+                                                      (
+                                                        context,
+                                                        error,
+                                                        stackTrace,
+                                                      ) {
+                                                        return Container(
+                                                          height: 150,
+                                                          width: 200,
+                                                          color: Colors
+                                                              .grey
+                                                              .shade200,
+                                                          child: Icon(
+                                                            Icons
+                                                                .image_not_supported,
+                                                            size: 50,
+                                                            color: Colors
+                                                                .grey
+                                                                .shade400,
+                                                          ),
+                                                        );
+                                                      },
                                                 ),
-                                              ],
-                                            ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          back: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  ThemeColors.baseColor.withOpacity(0.9),
+                                  ThemeColors.baseColor,
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ThemeColors.baseColor.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: Offset(0, 8),
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            width: 300,
+                            height: 400,
+                            child: Stack(
+                              children: [
+                                // Background decoration
+                                Positioned(
+                                  top: -30,
+                                  left: -30,
+                                  child: Container(
+                                    width: 120,
+                                    height: 120,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.1),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  bottom: -40,
+                                  right: -40,
+                                  child: Container(
+                                    width: 150,
+                                    height: 150,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: Colors.white.withOpacity(0.05),
+                                    ),
+                                  ),
+                                ),
+                                // Full description content
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(24),
+                                    child: Container(
+                                      padding: EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.25),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: SingleChildScrollView(
+                                        child: Text(
+                                          card.description,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            height: 1.5,
                                           ),
-                                        ],
+                                          textAlign: TextAlign.left,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ), // Close FlipCard
-                        ); // Close GestureDetector
+                          ),
+                        ); // Close FlipCard
                       },
                       onCardCollectionAnimationComplete: (bool value) {},
                     ),

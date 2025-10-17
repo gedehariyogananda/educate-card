@@ -101,15 +101,6 @@ class _MyAppState extends State<MyApp> {
                         style: const TextStyle(fontSize: 16),
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        'Q: ${card.question}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'A: ${card.answer}',
-                        style: const TextStyle(color: Colors.green),
-                      ),
                     ],
                   ),
                 ),

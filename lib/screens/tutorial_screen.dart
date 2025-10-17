@@ -36,7 +36,7 @@ class TutorialScreen extends StatelessWidget {
         PageViewModel(
           title: "Flip Kartu 🔄",
           body:
-              "Ketuk kartu untuk membalik dan melihat pertanyaan serta jawaban di bagian belakang kartu.",
+              "Swipe ke KIRI untuk membalik kartu dan melihat deskripsi pembelajaran di bagian belakang.",
           image: _buildImage('🔄', Colors.purple),
           decoration: _getPageDecoration(),
         ),
