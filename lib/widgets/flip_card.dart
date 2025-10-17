@@ -3,8 +3,16 @@ import 'package:flutter/material.dart';
 class FlipCard extends StatefulWidget {
   final Widget front;
   final Widget back;
-  const FlipCard({Key? key, required this.front, required this.back})
-    : super(key: key);
+  // Callbacks for flip events
+  final VoidCallback? onFlippedToBack;
+  final VoidCallback? onFlippedToFront;
+  const FlipCard({
+    Key? key,
+    required this.front,
+    required this.back,
+    this.onFlippedToBack,
+    this.onFlippedToFront,
+  }) : super(key: key);
 
   @override
   State<FlipCard> createState() => _FlipCardState();
@@ -28,9 +36,16 @@ class _FlipCardState extends State<FlipCard>
 
   void _flip() {
     if (_isFront) {
-      _controller.forward();
+      // Flip to back
+      _controller.forward().then((_) {
+        // Animation complete showing back side
+        if (mounted) widget.onFlippedToBack?.call();
+      });
     } else {
-      _controller.reverse();
+      // Flip to front
+      _controller.reverse().then((_) {
+        if (mounted) widget.onFlippedToFront?.call();
+      });
     }
     setState(() {
       _isFront = !_isFront;
