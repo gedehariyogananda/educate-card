@@ -14,6 +14,14 @@ class _MenuScreenState extends State<MenuScreen>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  bool _hasStarted = false;
+
+  Future<void> _loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _hasStarted = prefs.getBool('has_started_game') ?? false;
+    });
+  }
 
   @override
   void initState() {
@@ -34,6 +42,7 @@ class _MenuScreenState extends State<MenuScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
 
     _controller.forward();
+    _loadState();
   }
 
   @override
@@ -59,6 +68,13 @@ class _MenuScreenState extends State<MenuScreen>
               await prefs.setInt('last_card_index', 0);
             }
 
+            // Tandai bahwa game sudah pernah dimulai
+            final prefs2 = await SharedPreferences.getInstance();
+            await prefs2.setBool('has_started_game', true);
+            setState(() {
+              _hasStarted = true;
+            });
+
             // Navigate ke HomePage
             Navigator.pushReplacementNamed(context, '/home');
           },
@@ -77,62 +93,163 @@ class _MenuScreenState extends State<MenuScreen>
             end: Alignment.bottomRight,
             colors: [
               ThemeColors.baseColor,
-              ThemeColors.baseColor.withOpacity(0.8),
-              Color(0xFF7986CB), // Light Indigo
+              ThemeColors.baseColor.withOpacity(0.85),
+              const Color(0xFF90CAF9),
             ],
+            stops: const [0.0, 0.6, 1.0],
           ),
         ),
         child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Menu Buttons - Selalu tampilkan 2 tombol
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 40),
-                    child: Column(
-                      children: [
-                        // Lanjutkan Belajar Button
-                        _buildMenuButton(
-                          icon: Icons.play_circle_filled,
-                          title: 'Lanjutkan Belajar',
-                          subtitle: 'Lanjutkan dari terakhir kali',
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white,
-                              Colors.white.withOpacity(0.9),
-                            ],
-                          ),
-                          textColor: ThemeColors.baseColor,
-                          iconColor: ThemeColors.baseColor,
-                          onTap: () => _startGame(isResume: true),
+          child: Stack(
+            children: [
+              // Decorative soft circles similar to Splash
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.12),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -60,
+                left: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.08),
+                  ),
+                ),
+              ),
+
+              // Greeting section unified (same styling, combined block)
+              Positioned(
+                top: 70,
+                left: 16,
+                right: 16,
+                child: Text(
+                  'Halloo...\nWelcome to the application Moulsify Education',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white.withOpacity(0.98),
+                    height: 1.25,
+                    letterSpacing: 0.2,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.2),
+                        offset: const Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Menu buttons in the center with fade/scale animation
+              Center(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!_hasStarted) ...[
+                            _buildMenuButton(
+                              icon: Icons.play_circle_fill_rounded,
+                              title: 'Mulai Game',
+                              subtitle: 'Mulai belajar sekarang',
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white,
+                                  Colors.white.withOpacity(0.9),
+                                ],
+                              ),
+                              textColor: ThemeColors.baseColor,
+                              iconColor: ThemeColors.baseColor,
+                              onTap: () => _startGame(isResume: false),
+                            ),
+                          ] else ...[
+                            _buildMenuButton(
+                              icon: Icons.play_circle_filled,
+                              title: 'Lanjutkan Belajar',
+                              subtitle: 'Lanjutkan dari terakhir kali',
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white,
+                                  Colors.white.withOpacity(0.9),
+                                ],
+                              ),
+                              textColor: ThemeColors.baseColor,
+                              iconColor: ThemeColors.baseColor,
+                              onTap: () => _startGame(isResume: true),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildMenuButton(
+                              icon: Icons.refresh_rounded,
+                              title: 'Mulai Ulang',
+                              subtitle: 'Mulai dari awal lagi',
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.white.withOpacity(0.25),
+                                  Colors.white.withOpacity(0.15),
+                                ],
+                              ),
+                              textColor: Colors.white,
+                              iconColor: Colors.white,
+                              borderColor: Colors.white.withOpacity(0.5),
+                              onTap: () => _startGame(isResume: false),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Bottom-center logo (bigger)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 16,
+                child: Center(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
                         ),
-                        SizedBox(height: 24),
-                        // Mulai Ulang Button
-                        _buildMenuButton(
-                          icon: Icons.refresh_rounded,
-                          title: 'Mulai Ulang',
-                          subtitle: 'Mulai dari awal lagi',
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0.25),
-                              Colors.white.withOpacity(0.15),
-                            ],
-                          ),
-                          textColor: Colors.white,
-                          iconColor: Colors.white,
-                          borderColor: Colors.white.withOpacity(0.5),
-                          onTap: () => _startGame(isResume: false),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.15),
+                          blurRadius: 40,
+                          spreadRadius: 10,
                         ),
                       ],
                     ),
+                    child: Image.asset(
+                      'assets/icon_moulsify_edu.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.contain,
+                    ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

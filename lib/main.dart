@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:showcaseview/showcaseview.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'widgets/swiper_card.dart';
 import 'models/card_data.dart';
 import 'widgets/flip_card.dart';
 import 'utils/theme_colors.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/menu_screen.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 
 void main() => runApp(const MyApp());
 
@@ -18,15 +18,50 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'MoulsivyEdu',
+      title: 'MoulsifyEdu',
       initialRoute: '/',
       routes: {
-        '/': (context) => const SplashScreen(),
+        // Decider: no splash, route to onboarding on first run, otherwise to menu
+        '/': (context) => const _StartupDecider(),
         '/tutorial': (context) => const TutorialScreen(),
         '/menu': (context) => const MenuScreen(),
         '/home': (context) => const HomePage(),
       },
     );
+  }
+}
+
+/// Startup decider without visible splash: routes to onboarding if not completed,
+/// otherwise goes directly to MenuScreen.
+class _StartupDecider extends StatefulWidget {
+  const _StartupDecider();
+
+  @override
+  State<_StartupDecider> createState() => _StartupDeciderState();
+}
+
+class _StartupDeciderState extends State<_StartupDecider> {
+  @override
+  void initState() {
+    super.initState();
+    _decide();
+  }
+
+  Future<void> _decide() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
+    if (!mounted) return;
+    if (!tutorialCompleted) {
+      Navigator.pushReplacementNamed(context, '/tutorial');
+    } else {
+      Navigator.pushReplacementNamed(context, '/menu');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Minimal blank container to avoid any splash visuals
+    return const SizedBox.shrink();
   }
 }
 
@@ -41,227 +76,146 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkTutorialStatus();
+    // Splash hanya tampil statis sebentar lalu masuk sesuai status tutorial
+    Future.delayed(const Duration(milliseconds: 1200), _navigateNext);
   }
 
-  Future<void> _checkTutorialStatus() async {
-    await Future.delayed(Duration(seconds: 2));
-
+  Future<void> _navigateNext() async {
     final prefs = await SharedPreferences.getInstance();
     final tutorialCompleted = prefs.getBool('tutorial_completed') ?? false;
     final hasExited = prefs.getBool('has_exited_once') ?? false;
-
-    if (mounted) {
-      if (!tutorialCompleted) {
-        // Belum onboarding -> ke tutorial
-        Navigator.pushReplacementNamed(context, '/tutorial');
-      } else if (hasExited) {
-        // Sudah pernah exit -> ke menu
-        Navigator.pushReplacementNamed(context, '/menu');
-      } else {
-        // Baru selesai onboarding, belum pernah exit -> langsung ke home
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+    if (!mounted) return;
+    if (!tutorialCompleted) {
+      Navigator.pushReplacementNamed(context, '/tutorial');
+    } else if (hasExited) {
+      Navigator.pushReplacementNamed(context, '/menu');
+    } else {
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              ThemeColors.baseColor,
-              ThemeColors.baseColor.withOpacity(0.8),
-              Color(0xFFBBDEFB), // Light Blue
-            ],
-            stops: [0.0, 0.6, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Animated logo container with SVG
-                TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: Duration(milliseconds: 1000),
-                  curve: Curves.elasticOut,
-                  builder: (context, double value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: Transform.rotate(
-                        angle: (1 - value) * 0.5,
-                        child: Container(
-                          padding: EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 25,
-                                offset: Offset(0, 10),
-                                spreadRadius: 3,
-                              ),
-                            ],
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/logo_flashcard.svg',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 32),
-                // App name with animation
-                TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: Duration(milliseconds: 1100),
-                  curve: Curves.easeOutCubic,
-                  builder: (context, double value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Transform.translate(
-                        offset: Offset(0, 25 * (1 - value)),
-                        child: Column(
-                          children: [
-                            Text(
-                              'MoulsivyEdu',
-                              style: TextStyle(
-                                fontSize: 46,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 2.5,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    offset: Offset(0, 3),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.4),
-                                  width: 1.5,
-                                ),
-                              ),
-                              child: Text(
-                                'Belajar Jadi Menyenangkan',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 36,
-                                vertical: 4,
-                              ),
-                              child: Text(
-                                'Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan dan mudah dipahami',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Colors.white.withOpacity(0.95),
-                                  letterSpacing: 0.3,
-                                  height: 1.5,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                SizedBox(height: 48),
-                // Loading indicator with pulse animation
-                TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0, end: 1),
-                  duration: Duration(milliseconds: 1300),
-                  builder: (context, double value, child) {
-                    return Opacity(
-                      opacity: value,
-                      child: Column(
-                        children: [
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Pulsing circle background
-                              TweenAnimationBuilder(
-                                tween: Tween<double>(begin: 0.8, end: 1.2),
-                                duration: Duration(milliseconds: 800),
-                                curve: Curves.easeInOut,
-                                builder: (context, double scale, child) {
-                                  return Transform.scale(
-                                    scale: scale,
-                                    child: Container(
-                                      width: 70,
-                                      height: 70,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.white.withOpacity(0.1),
-                                      ),
-                                    ),
-                                  );
-                                },
-                                onEnd: () {
-                                  // Loop the animation
-                                },
-                              ),
-                              SizedBox(
-                                width: 50,
-                                height: 50,
-                                child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                  strokeWidth: 3.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 18),
-                          Text(
-                            'Memuat pembelajaran...',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.92),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+      body: SafeArea(
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                ThemeColors.baseColor,
+                ThemeColors.baseColor.withOpacity(0.85),
+                const Color(0xFF90CAF9),
               ],
+              stops: const [0.0, 0.6, 1.0],
             ),
+          ),
+          child: Stack(
+            children: [
+              // dekorasi lingkaran lembut
+              Positioned(
+                top: -40,
+                right: -40,
+                child: Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.12),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -60,
+                left: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.08),
+                  ),
+                ),
+              ),
+
+              // "Halloo..." di pojok kiri atas (badge)
+              Positioned(
+                top: 20,
+                left: 16,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.35),
+                      width: 1,
+                    ),
+                  ),
+                  child: const Text(
+                    'Halloo...',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+
+              // welcome text di tengah atas
+              Align(
+                alignment: const Alignment(0, -0.55),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Text(
+                    'Welcome to the application moulsify education',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.98),
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ),
+
+              // Logo besar di bawah tengah dengan glow
+              Align(
+                alignment: const Alignment(0, 0.6),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
+                      ),
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.15),
+                        blurRadius: 40,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    'assets/icon_moulsify_edu.png',
+                    width: 240,
+                    height: 240,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -280,7 +234,7 @@ class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   final List<BaseDatas> cards = datas;
   bool isSoundEnabled = true;
-  late FlutterTts flutterTts;
+  late FlutterTts _tts;
   int currentCardIndex = 0;
   BuildContext? _showcaseContext;
   bool _swipeHintShown = false; // show once per app launch
@@ -506,7 +460,7 @@ class _HomePageState extends State<HomePage>
         isSoundEnabled = savedSoundState;
       });
 
-      // Delay sedikit untuk animasi countdown selesai, baru speak
+      // Delay sedikit untuk animasi countdown selesai, lalu ucapkan judul
       await Future.delayed(Duration(milliseconds: 500));
 
       if (currentCardIndex < cards.length) {
@@ -523,7 +477,7 @@ class _HomePageState extends State<HomePage>
         });
       }
 
-      // Hint now shown via animated overlay after initial title TTS completes
+      // Hint muncul via overlay animasi setelah audio pertama (jika ada)
     } catch (e) {
       print('Error loading saved state: $e');
     }
@@ -566,33 +520,221 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  void _initTts() {
-    flutterTts = FlutterTts();
-    flutterTts.setLanguage("id-ID");
-    flutterTts.setSpeechRate(0.42); // Lebih lambat dari 0.5 agar lebih jelas
-    flutterTts.setPitch(
-      0.95,
-    ); // Sedikit lebih rendah agar terdengar lebih natural
-    flutterTts.setVolume(1.0); // Volume penuh
-    flutterTts.awaitSpeakCompletion(true);
+  Future<void> _initTts() async {
+    _tts = FlutterTts();
+    try {
+      await _tts.setEngine('com.google.android.tts');
+    } catch (_) {}
+    // Ensure speak() future completes after utterance finishes
+    try {
+      await _tts.awaitSpeakCompletion(true);
+    } catch (_) {}
+    await _tts.setSpeechRate(0.45);
+    await _tts.setPitch(1.0);
+    await _tts.setVolume(1.0);
+
+    const String idLocale = 'id-ID';
+    const String enLocale = 'en-US';
+    try {
+      await _tts.setLanguage(idLocale);
+      final voices = await _tts.getVoices;
+      if (voices is List) {
+        Map<String, dynamic>? pickFemale(List list, String locale) {
+          for (final v in list) {
+            try {
+              final m = Map<String, dynamic>.from(v as Map);
+              final name = (m['name'] ?? '').toString().toLowerCase();
+              final gender = (m['gender'] ?? '').toString().toLowerCase();
+              final loc = (m['locale'] ?? '').toString();
+              if (loc == locale &&
+                  (gender == 'female' ||
+                      name.contains('female') ||
+                      name.contains('-f'))) {
+                return m;
+              }
+            } catch (_) {}
+          }
+          for (final v in list) {
+            try {
+              final m = Map<String, dynamic>.from(v as Map);
+              final loc = (m['locale'] ?? '').toString();
+              if (loc == locale) return m;
+            } catch (_) {}
+          }
+          return null;
+        }
+
+        final l = List.from(voices);
+        final sel = pickFemale(l, idLocale) ?? pickFemale(l, enLocale);
+        if (sel != null) {
+          await _tts.setVoice({"name": sel['name'], "locale": sel['locale']});
+          await _tts.setLanguage(sel['locale']);
+        }
+      }
+    } catch (e) {
+      debugPrint('TTS voice selection error: $e');
+      await _tts.setLanguage(enLocale);
+    }
   }
 
-  Future<void> _speak(String text) async {
-    if (isSoundEnabled && text.isNotEmpty) {
-      // Stop any ongoing speech first for a clean start
-      try {
-        await flutterTts.stop();
-        await Future.delayed(Duration(milliseconds: 100));
-      } catch (_) {}
-      // Bersihkan karakter khusus yang bisa membuat TTS bingung
-      String cleanedText = text
-          .replaceAll('×', 'kali')
-          .replaceAll('/', ' per ')
-          .replaceAll('·', ' ')
-          .replaceAll('\n\n', '. '); // Ganti baris baru dengan jeda
-
-      await flutterTts.speak(cleanedText);
+  Future<void> _speak(String? text) async {
+    if (!isSoundEnabled || text == null || text.trim().isEmpty) return;
+    try {
+      await _tts.stop();
+      await _speakChunked(_verbalize(text));
+    } catch (e) {
+      debugPrint('TTS speak error: $e');
     }
+  }
+
+  Future<void> _speakChunked(String text, {int chunkLength = 400}) async {
+    final t = text.trim();
+    if (t.length <= chunkLength) {
+      await _tts.speak(t);
+      return;
+    }
+    int start = 0;
+    while (start < t.length) {
+      final end = (start + chunkLength < t.length)
+          ? start + chunkLength
+          : t.length;
+      final part = t.substring(start, end);
+      await _tts.speak(part);
+      start = end;
+    }
+  }
+
+  // Convert formula symbols to Indonesian speech-friendly phrases
+  String _verbalize(String text) {
+    String s = text;
+    // Basic math replacements
+    s = s.replaceAll('Δ', 'delta ');
+    s = s.replaceAll('·', ' dikali ');
+    s = s.replaceAll('·', ' dikali '); // ensure mid-dot handled
+    s = s.replaceAll('*', ' dikali ');
+    s = s.replaceAll('/', ' dibagi ');
+    s = s.replaceAll('=', ' sama dengan ');
+    s = s.replaceAll('+', ' ditambah ');
+    s = s.replaceAll('-', ' dikurang ');
+    s = s.replaceAll('^2', ' pangkat dua ');
+    s = s.replaceAll('^3', ' pangkat tiga ');
+    s = s.replaceAll("v'", ' v aksen ');
+    // Parentheses as words for clarity in TTS
+    s = s.replaceAll('(', ' kurung buka ');
+    s = s.replaceAll(')', ' kurung tutup ');
+    // Units
+    // Common composite units first
+    s = s.replaceAll('kg·m/s', ' kilogram meter per detik ');
+    s = s.replaceAll('kg.m/s', ' kilogram meter per detik ');
+    s = s.replaceAll('kg m/s', ' kilogram meter per detik ');
+    s = s.replaceAll('N·s', ' newton detik ');
+    s = s.replaceAll('N.s', ' newton detik ');
+    s = s.replaceAll('N s', ' newton detik ');
+    s = s.replaceAll('Ns', ' newton detik ');
+    s = s.replaceAll('kg/m', ' kilogram per meter ');
+    // Parenthesized units
+    s = s.replaceAll('(kg)', '(kilogram)');
+    s = s.replaceAll('(m/s)', '(meter per detik)');
+    s = s.replaceAll("p'", ' pe aksen ');
+    s = s.replaceAll("m'", ' em aksen ');
+    s = s.replaceAll("t'", ' te aksen ');
+
+    // Read single-letter symbols naturally when they appear standalone
+    s = s.replaceAll(RegExp(r'\bI\s*=\s*'), ' i sama dengan ');
+    s = s.replaceAll(RegExp(r'\bF\s*=\s*'), ' ef sama dengan ');
+    s = s.replaceAll(RegExp(r"\bv'\s*=\s*"), ' ve aksen sama dengan ');
+    s = s.replaceAll(RegExp(r'\bv\s*=\s*'), ' ve sama dengan ');
+    s = s.replaceAll(RegExp(r'\bp\s*=\s*'), ' pe sama dengan ');
+    s = s.replaceAll(RegExp(r'\bm\s*=\s*'), ' em sama dengan ');
+    s = s.replaceAll(RegExp(r'\bt\s*=\s*'), ' te sama dengan ');
+
+    // Standalone letters in keterangan context
+    s = s.replaceAll(RegExp(r'\bI\b'), ' i ');
+    s = s.replaceAll(RegExp(r'\bF\b'), ' ef ');
+    s = s.replaceAll(RegExp(r'\bp\b'), ' pe ');
+    s = s.replaceAll(RegExp(r'\bm\b'), ' em ');
+    s = s.replaceAll(RegExp(r"\bv'\b"), ' ve aksen ');
+    s = s.replaceAll(RegExp(r'\bv\b'), ' ve ');
+    s = s.replaceAll(RegExp(r'\bt\b'), ' te ');
+
+    // "delta p" and "delta t" clarity
+    s = s.replaceAll(RegExp(r'\bdelta\s*p\b'), ' delta pe ');
+    s = s.replaceAll(RegExp(r'\bdelta\s*t\b'), ' delta te ');
+    s = s.replaceAll('(N·s)', '(newton detik)');
+    s = s.replaceAll('(Ns)', '(newton detik)');
+    s = s.replaceAll('(N)', '(newton)');
+    s = s.replaceAll('(m)', '(meter)');
+    s = s.replaceAll('(cm)', '(sentimeter)');
+    s = s.replaceAll('(mm)', '(milimeter)');
+    s = s.replaceAll('(km)', '(kilometer)');
+    s = s.replaceAll('(s)', '(detik)');
+    // Simple standalone units by word boundary (best-effort)
+    s = s.replaceAll(RegExp(r'\bkg\b'), ' kilogram ');
+    s = s.replaceAll(RegExp(r'\bNs\b', caseSensitive: false), ' newton detik ');
+    s = s.replaceAll('m/s', ' meter per detik ');
+    // Collapse multiple spaces
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return s;
+  }
+
+  // Convert simple TeX (from formulasTex) to readable Indonesian text then pass to _verbalize
+  String _verbalizeTex(String tex) {
+    var t = tex.trim();
+    // Normalize TeX tokens
+    t = t.replaceAll('\\cdot', '·');
+    t = t.replaceAll('\\times', '·');
+    t = t.replaceAll('\\Delta', 'Δ');
+    // Remove braces commonly used in TeX
+    t = t.replaceAll('{', '').replaceAll('}', '');
+    // Map Δp and Δt to semantic phrases directly before symbol-level replacements
+    t = t.replaceAll(RegExp(r'(Δ)\s*p'), ' perubahan momentum ');
+    t = t.replaceAll(RegExp(r'(Δ)\s*t'), ' selang waktu ');
+    // Clean extra spaces
+    t = t.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return _verbalize(t);
+  }
+
+  // Sanitize/normalize TeX before rendering to avoid parser issues
+  String _sanitizeTex(String tex) {
+    var t = tex.trim();
+    // Replace common unicode symbols with TeX commands
+    t = t.replaceAll('·', r'\cdot');
+    t = t.replaceAll('Δ', r'\Delta');
+    // Remove surrounding $ if any
+    if (t.startsWith(r'$') && t.endsWith(r'$') && t.length > 2) {
+      t = t.substring(1, t.length - 1);
+    }
+    return t;
+  }
+
+  // Extract explanatory "keterangan" lines from description to show under formulas
+  // - If description contains 'Keterangan:', take the lines after it (split by newline)
+  // - Else if contains 'dengan', take the text after it (split by comma)
+  // - Else return empty list
+  List<String> _extractKeteranganItems(String description) {
+    final d = description.trim();
+    final lower = d.toLowerCase();
+    final ketLabel = 'keterangan:';
+    if (lower.contains(ketLabel)) {
+      final start = lower.indexOf(ketLabel) + ketLabel.length;
+      final after = d.substring(start).trim();
+      return after
+          .split(RegExp(r'\r?\n'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    final denganLabel = 'dengan';
+    if (lower.contains(denganLabel)) {
+      final start = lower.indexOf(denganLabel) + denganLabel.length;
+      final after = d.substring(start).trim();
+      return after
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+    }
+    return [];
   }
 
   void _toggleSound() {
@@ -600,7 +742,7 @@ class _HomePageState extends State<HomePage>
       isSoundEnabled = !isSoundEnabled;
     });
     if (!isSoundEnabled) {
-      flutterTts.stop();
+      _tts.stop();
     }
     _saveLastCardIndex();
   }
@@ -838,7 +980,9 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
-    flutterTts.stop();
+    try {
+      _tts.stop();
+    } catch (_) {}
     try {
       _hintController.dispose();
     } catch (_) {}
@@ -890,7 +1034,7 @@ class _HomePageState extends State<HomePage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'MoulsivyEdu',
+                            'MoulsifyEdu',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 24,
@@ -1067,44 +1211,77 @@ class _HomePageState extends State<HomePage>
                               currentCardIndex = index;
                             });
                             if (index >= 0 && index < cards.length) {
-                              // Speak the title when a new front card becomes active
+                              // Speak the front title when a new card becomes active
                               _speak(cards[index].title);
                             }
                             _saveLastCardIndex();
                           },
                           onAllCardsCompleted: () async {
                             // Trigger saat user swipe up di kartu terakhir
-                            print('🎉 onAllCardsCompleted DIPANGGIL!');
-                            print('Sound enabled: $isSoundEnabled');
-                            if (isSoundEnabled) {
-                              print('Mencoba memutar sound...');
-                              // STOP dulu TTS yang sedang berjalan
-                              await flutterTts.stop();
-                              // Delay sedikit untuk memastikan TTS berhenti
-                              await Future.delayed(Duration(milliseconds: 300));
-                              // Putar sound celebration
-                              await flutterTts.speak(
-                                "Luar biasa! Anda telah menyelesaikan semua kartu pembelajaran!",
-                              );
-                            }
+                            // Optional: you can play a completion sound here if you add one
+                            // await _playAsset('audio/completion.mp3');
                           },
                           cardBuilder: (context, index, visibleIndex) {
                             final BaseDatas card = cards[index];
+                            // Certain titles should show description before formulas on the back side
+                            final bool showDescFirst =
+                                card.title == 'Hukum Kekekalan Momentum' ||
+                                card.title == 'Sifat Tumbukan';
                             return FlipCard(
                               onFlippedToBack: () async {
-                                if (isSoundEnabled) {
-                                  await flutterTts.stop();
-                                  await Future.delayed(
-                                    Duration(milliseconds: 100),
-                                  );
-                                  _speak(card.description);
+                                // Always read formulas first, then keterangan (and fallback to deskripsi jika tidak ada keterangan)
+                                await _tts.stop();
+                                final texList = card.formulasTex ?? const [];
+                                final soundFormulas =
+                                    card.soundFormulas ?? const [];
+                                final soundKeterangan =
+                                    card.soundKeterangan ?? const [];
+                                final hasAnyFormula =
+                                    texList.isNotEmpty ||
+                                    soundFormulas.isNotEmpty;
+
+                                final buffer = StringBuffer();
+                                if (hasAnyFormula) {
+                                  final formulasSpeech =
+                                      soundFormulas.isNotEmpty
+                                      ? soundFormulas.join('. ')
+                                      : texList
+                                            .map((f) => _verbalizeTex(f))
+                                            .join('. ');
+                                  // Rumus selalu duluan
+                                  buffer.write('Rumus: ');
+                                  buffer.write(formulasSpeech);
+                                  // Keterangan setelah rumus
+                                  if (soundKeterangan.isNotEmpty) {
+                                    buffer.write('. Keterangan: ');
+                                    buffer.write(soundKeterangan.join('. '));
+                                  } else {
+                                    final items = _extractKeteranganItems(
+                                      card.description,
+                                    );
+                                    if (items.isNotEmpty) {
+                                      buffer.write('. Keterangan: ');
+                                      buffer.write(
+                                        items.map(_verbalize).join('. '),
+                                      );
+                                    } else {
+                                      // Jika tidak ada keterangan, fallback baca deskripsi ringkas
+                                      buffer.write('. ');
+                                      buffer.write(
+                                        _verbalize(card.description),
+                                      );
+                                    }
+                                  }
+                                } else {
+                                  // Tanpa rumus, baca deskripsi
+                                  buffer.write(_verbalize(card.description));
                                 }
+                                await _speakChunked(buffer.toString());
                               },
                               onFlippedToFront: () async {
-                                // Optional: stop speaking when returning to front
-                                if (isSoundEnabled) {
-                                  await flutterTts.stop();
-                                }
+                                // Return to front: speak front title again
+                                await _tts.stop();
+                                await _speak(card.title);
                               },
                               front: Container(
                                 decoration: BoxDecoration(
@@ -1211,8 +1388,12 @@ class _HomePageState extends State<HomePage>
                                         children: [
                                           // Title di atas image
                                           Container(
+                                            constraints: BoxConstraints(
+                                              // Limit width so long titles wrap nicely inside the card
+                                              maxWidth: 260,
+                                            ),
                                             padding: EdgeInsets.symmetric(
-                                              horizontal: 20,
+                                              horizontal: 16,
                                               vertical: 10,
                                             ),
                                             decoration: BoxDecoration(
@@ -1228,26 +1409,20 @@ class _HomePageState extends State<HomePage>
                                                 ),
                                               ],
                                             ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  Icons.stars_rounded,
+                                            child: Center(
+                                              child: Text(
+                                                card.title,
+                                                textAlign: TextAlign.center,
+                                                maxLines: 2,
+                                                softWrap: true,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
                                                   color: ThemeColors.baseColor,
-                                                  size: 20,
+                                                  letterSpacing: 0.3,
                                                 ),
-                                                SizedBox(width: 8),
-                                                Text(
-                                                  card.title,
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color:
-                                                        ThemeColors.baseColor,
-                                                    letterSpacing: 0.5,
-                                                  ),
-                                                ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                           const SizedBox(height: 16),
@@ -1332,6 +1507,7 @@ class _HomePageState extends State<HomePage>
                                                     ),
                                             ),
                                           ),
+                                          // Removed front-side formula preview per request; formulas shown on back below description only
                                         ],
                                       ),
                                     ),
@@ -1410,15 +1586,290 @@ class _HomePageState extends State<HomePage>
                                             ),
                                           ),
                                           child: SingleChildScrollView(
-                                            child: Text(
-                                              card.description,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w500,
-                                                height: 1.5,
-                                              ),
-                                              textAlign: TextAlign.left,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                if ((card.formulasTex ?? [])
+                                                    .isNotEmpty) ...[
+                                                  if (showDescFirst) ...[
+                                                    // Show description first
+                                                    Text(
+                                                      card.description,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        height: 1.5,
+                                                      ),
+                                                      textAlign: TextAlign.left,
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    // Then show formulas section
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 8,
+                                                          ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                0.14,
+                                                              ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                  0.25,
+                                                                ),
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                        child: const Text(
+                                                          'Rumus :',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    ...card.formulasTex!.map(
+                                                      (f) => Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              bottom: 12,
+                                                            ),
+                                                        child: Math.tex(
+                                                          _sanitizeTex(f),
+                                                          mathStyle:
+                                                              MathStyle.display,
+                                                          textStyle:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 20,
+                                                              ),
+                                                          onErrorFallback:
+                                                              (err) => Text(
+                                                                f,
+                                                                style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 20,
+                                                                ),
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ] else ...[
+                                                    // Original order: formulas first, then description/keterangan
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            bottom: 8,
+                                                          ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 6,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                0.14,
+                                                              ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                8,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                  0.25,
+                                                                ),
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                        child: const Text(
+                                                          'Rumus :',
+                                                          style: TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    ...card.formulasTex!.map(
+                                                      (f) => Padding(
+                                                        padding:
+                                                            const EdgeInsets.only(
+                                                              bottom: 12,
+                                                            ),
+                                                        child: Math.tex(
+                                                          _sanitizeTex(f),
+                                                          mathStyle:
+                                                              MathStyle.display,
+                                                          textStyle:
+                                                              const TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 20,
+                                                              ),
+                                                          onErrorFallback:
+                                                              (err) => Text(
+                                                                f,
+                                                                style: const TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontSize: 20,
+                                                                ),
+                                                              ),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 10),
+                                                    if (_extractKeteranganItems(
+                                                      card.description,
+                                                    ).isNotEmpty) ...[
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets.all(
+                                                              12,
+                                                            ),
+                                                        decoration: BoxDecoration(
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                0.10,
+                                                              ),
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                10,
+                                                              ),
+                                                          border: Border.all(
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                  0.22,
+                                                                ),
+                                                            width: 1,
+                                                          ),
+                                                        ),
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            const Text(
+                                                              'Keterangan:',
+                                                              style: TextStyle(
+                                                                color: Colors
+                                                                    .white,
+                                                                fontSize: 14,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              height: 6,
+                                                            ),
+                                                            ..._extractKeteranganItems(
+                                                              card.description,
+                                                            ).map(
+                                                              (item) => Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      bottom: 6,
+                                                                    ),
+                                                                child: Row(
+                                                                  crossAxisAlignment:
+                                                                      CrossAxisAlignment
+                                                                          .start,
+                                                                  children: [
+                                                                    Container(
+                                                                      margin:
+                                                                          const EdgeInsets.only(
+                                                                            top:
+                                                                                6,
+                                                                          ),
+                                                                      width: 6,
+                                                                      height: 6,
+                                                                      decoration: BoxDecoration(
+                                                                        color: Colors
+                                                                            .white,
+                                                                        shape: BoxShape
+                                                                            .circle,
+                                                                      ),
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      width: 8,
+                                                                    ),
+                                                                    Expanded(
+                                                                      child: Text(
+                                                                        item,
+                                                                        style: const TextStyle(
+                                                                          color:
+                                                                              Colors.white,
+                                                                          fontSize:
+                                                                              14,
+                                                                          height:
+                                                                              1.4,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ] else ...[
+                                                      // Fallback to raw description when no clear keterangan found
+                                                      Text(
+                                                        card.description,
+                                                        style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 16,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          height: 1.5,
+                                                        ),
+                                                        textAlign:
+                                                            TextAlign.left,
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ] else ...[
+                                                  // No formulas: show description as-is
+                                                  Text(
+                                                    card.description,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      height: 1.5,
+                                                    ),
+                                                    textAlign: TextAlign.left,
+                                                  ),
+                                                ],
+                                              ],
                                             ),
                                           ),
                                         ),

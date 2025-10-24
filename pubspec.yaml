@@ -1,5 +1,5 @@
-name: moulsivy_edu
-description: "MoulsivyEdu - Interactive Learning App"
+name: moulsify_edu
+description: "MoulsifyEdu - Interactive Learning App"
 publish_to: "none"
 version: 0.1.0
 
@@ -9,7 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_tts: ^3.8.5
+  flutter_tts: ^3.8.3
+  flutter_math_fork: ^0.7.2
   card_swiper: ^2.0.4
   introduction_screen: ^3.1.12
   showcaseview: ^3.0.0
@@ -25,15 +26,19 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/app_icon.png"
-  min_sdk_android: 21
+  # Use explicit adaptive config for Android so the foreground definitely comes from the new image
+  adaptive_icon_foreground: "assets/icon_moulsify_edu.png"
+  adaptive_icon_background: "#3F51B5"
+  # iOS still uses this image as the app icon; ensure no alpha per iOS requirements
+  image_path_android: "assets/icon_moulsify_edu.png"
+  image_path_ios: "assets/icon_moulsify_edu.png"
   remove_alpha_ios: true
   background_color_ios: "#FFFFFF"
+  min_sdk_android: 21
 
 flutter:
   uses-material-design: true
   assets:
     - assets/
-    - assets/logo_flashcard.svg
+    - assets/audio/
     - assets/resources/
-    - assets/resources/gambar-momentum.png

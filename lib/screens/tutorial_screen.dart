@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:introduction_screen/introduction_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../utils/theme_colors.dart';
 
 class TutorialScreen extends StatelessWidget {
@@ -13,7 +12,7 @@ class TutorialScreen extends StatelessWidget {
       globalBackgroundColor: Colors.white,
       pages: [
         PageViewModel(
-          title: "Selamat Datang di MoulsivyEdu! 🎓",
+          title: "Selamat Datang di MoulsifyEdu! 🎓",
           body:
               "Aplikasi pembelajaran interaktif dengan kartu edukasi yang menyenangkan dan mudah dipahami.",
           image: _buildImageWithLogo(context),
@@ -108,29 +107,37 @@ class TutorialScreen extends StatelessWidget {
   }
 
   Widget _buildImageWithLogo(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(40),
-            decoration: BoxDecoration(
-              color: ThemeColors.baseColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ThemeColors.baseColor.withOpacity(0.2),
-                width: 3,
-              ),
-            ),
-            child: SvgPicture.asset(
-              'assets/logo_flashcard.svg',
-              width: 100,
-              height: 100,
-            ),
+    // Match the same visual style and sizing as _buildImage(),
+    // but use an image asset as the content instead of an emoji.
+    return Container(
+      padding: EdgeInsets.all(35),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ThemeColors.baseColor.withOpacity(0.15),
+            ThemeColors.baseColor.withOpacity(0.05),
+          ],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: ThemeColors.baseColor.withOpacity(0.3),
+          width: 3,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ThemeColors.baseColor.withOpacity(0.1),
+            blurRadius: 20,
+            offset: Offset(0, 10),
           ),
-          SizedBox(height: 16),
-          Text('🎯', style: TextStyle(fontSize: 50)),
         ],
+      ),
+      child: Image.asset(
+        'assets/icon_moulsify_edu.png',
+        width: 85,
+        height: 85,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -186,12 +193,12 @@ class TutorialScreen extends StatelessWidget {
     print('Tutorial completed, saving to SharedPreferences: true');
     final saved = prefs.getBool('tutorial_completed') ?? false;
     print('Verification - SharedPreferences value: $saved');
-    print('Navigating to: /home (first time after onboarding)');
+    print('Navigating to: /menu (first time after onboarding)');
     print('===========================');
 
-    // Navigate langsung ke home screen (pertama kali setelah onboarding)
+    // Navigate ke menu (tanpa splash), pertama kali setelah onboarding
     if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/menu');
     }
   }
 }
