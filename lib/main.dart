@@ -754,6 +754,12 @@ class _HomePageState extends State<HomePage>
     final impulsCards = cards
         .where((card) => card.category == CardCategory.impuls)
         .length;
+    final hkmCards = cards
+        .where((card) => card.category == CardCategory.hkm)
+        .length;
+    final tumbukanCards = cards
+        .where((card) => card.category == CardCategory.tumbukan)
+        .length;
 
     showDialog(
       context: context,
@@ -762,132 +768,167 @@ class _HomePageState extends State<HomePage>
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.white, ThemeColors.baseColor.withOpacity(0.05)],
-              ),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            ThemeColors.baseColor,
-                            ThemeColors.baseColor.withOpacity(0.8),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.category_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Statistik Kategori',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade800,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.close, color: Colors.grey.shade600),
-                      padding: EdgeInsets.zero,
-                    ),
+            child: Container(
+              padding: EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    ThemeColors.baseColor.withOpacity(0.05),
                   ],
                 ),
-                SizedBox(height: 24),
-                // Total Cards
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: ThemeColors.baseColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: ThemeColors.baseColor.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
                     children: [
-                      Icon(
-                        Icons.dashboard_rounded,
-                        color: ThemeColors.baseColor,
-                        size: 28,
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              ThemeColors.baseColor,
+                              ThemeColors.baseColor.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.category_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                       SizedBox(width: 12),
-                      Text(
-                        'Total: ${cards.length} Kartu',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeColors.baseColor,
+                      Expanded(
+                        child: Text(
+                          'Statistik Kategori',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade800,
+                          ),
                         ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close, color: Colors.grey.shade600),
+                        padding: EdgeInsets.zero,
                       ),
                     ],
                   ),
-                ),
-                SizedBox(height: 20),
-                // Momentum Category
-                _buildCategoryItem(
-                  'Momentum',
-                  momentumCards,
-                  cards.length,
-                  Color(0xFF42A5F5), // Blue
-                  Icons.speed_rounded,
-                ),
-                SizedBox(height: 16),
-                // Impuls Category
-                _buildCategoryItem(
-                  'Impuls',
-                  impulsCards,
-                  cards.length,
-                  Color(0xFF66BB6A), // Green
-                  Icons.flash_on_rounded,
-                ),
-                SizedBox(height: 24),
-                // Close Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ThemeColors.baseColor,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      'Tutup',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  SizedBox(height: 16),
+                  // Scrollable content
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Total Cards
+                          Container(
+                            padding: EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: ThemeColors.baseColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: ThemeColors.baseColor.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.dashboard_rounded,
+                                  color: ThemeColors.baseColor,
+                                  size: 28,
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  'Total: ${cards.length} Kartu',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: ThemeColors.baseColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 16),
+                          // Momentum Category
+                          _buildCategoryItem(
+                            'Momentum',
+                            momentumCards,
+                            cards.length,
+                            Color(0xFF42A5F5), // Blue
+                            Icons.speed_rounded,
+                          ),
+                          SizedBox(height: 12),
+                          // Impuls Category
+                          _buildCategoryItem(
+                            'Impuls',
+                            impulsCards,
+                            cards.length,
+                            Color(0xFF66BB6A), // Green
+                            Icons.flash_on_rounded,
+                          ),
+                          SizedBox(height: 12),
+                          // Hukum Kekekalan Momentum Category
+                          _buildCategoryItem(
+                            'Kekekalan Momentum',
+                            hkmCards,
+                            cards.length,
+                            Color(0xFF7E57C2), // Deep Purple
+                            Icons.compare_arrows_rounded,
+                          ),
+                          SizedBox(height: 12),
+                          // Tumbukan Category
+                          _buildCategoryItem(
+                            'Tumbukan',
+                            tumbukanCards,
+                            cards.length,
+                            Color(0xFFFB8C00), // Orange
+                            Icons.sports_martial_arts_rounded,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(height: 16),
+                  // Close Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ThemeColors.baseColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        'Tutup',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -902,7 +943,7 @@ class _HomePageState extends State<HomePage>
     Color color,
     IconData icon,
   ) {
-    double percentage = (count / total * 100);
+    double percentage = total > 0 ? (count / total * 100) : 0;
 
     return Container(
       padding: EdgeInsets.all(16),
@@ -962,7 +1003,7 @@ class _HomePageState extends State<HomePage>
               borderRadius: BorderRadius.circular(4),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: count / total,
+                widthFactor: total > 0 ? (count / total) : 0,
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -1216,17 +1257,12 @@ class _HomePageState extends State<HomePage>
                             }
                             _saveLastCardIndex();
                           },
-                          onAllCardsCompleted: () async {
-                            // Trigger saat user swipe up di kartu terakhir
-                            // Optional: you can play a completion sound here if you add one
-                            // await _playAsset('audio/completion.mp3');
-                          },
+                          onAllCardsCompleted: () async {},
                           cardBuilder: (context, index, visibleIndex) {
                             final BaseDatas card = cards[index];
                             // Certain titles should show description before formulas on the back side
                             final bool showDescFirst =
-                                card.title == 'Hukum Kekekalan Momentum' ||
-                                card.title == 'Sifat Tumbukan';
+                                card.title == '-' || card.title == '-';
                             return FlipCard(
                               onFlippedToBack: () async {
                                 // Always read formulas first, then keterangan (and fallback to deskripsi jika tidak ada keterangan)
@@ -1249,7 +1285,7 @@ class _HomePageState extends State<HomePage>
                                             .map((f) => _verbalizeTex(f))
                                             .join('. ');
                                   // Rumus selalu duluan
-                                  buffer.write('Rumus: ');
+                                  buffer.write('Persamaan : ');
                                   buffer.write(formulasSpeech);
                                   // Keterangan setelah rumus
                                   if (soundKeterangan.isNotEmpty) {
@@ -1344,15 +1380,26 @@ class _HomePageState extends State<HomePage>
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color:
-                                              card.category ==
-                                                  CardCategory.momentum
-                                              ? Color(
+                                          color: () {
+                                            switch (card.category) {
+                                              case CardCategory.momentum:
+                                                return const Color(
                                                   0xFF42A5F5,
-                                                ) // Blue for Momentum
-                                              : Color(
+                                                ); // Blue
+                                              case CardCategory.impuls:
+                                                return const Color(
                                                   0xFF66BB6A,
-                                                ), // Green for Impuls
+                                                ); // Green
+                                              case CardCategory.hkm:
+                                                return const Color(
+                                                  0xFF7E57C2,
+                                                ); // Deep Purple
+                                              case CardCategory.tumbukan:
+                                                return const Color(
+                                                  0xFFFB8C00,
+                                                ); // Orange
+                                            }
+                                          }(),
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
@@ -1636,7 +1683,7 @@ class _HomePageState extends State<HomePage>
                                                           ),
                                                         ),
                                                         child: const Text(
-                                                          'Rumus :',
+                                                          'Persamaan :',
                                                           style: TextStyle(
                                                             color: Colors.white,
                                                             fontSize: 16,
@@ -1705,7 +1752,7 @@ class _HomePageState extends State<HomePage>
                                                           ),
                                                         ),
                                                         child: const Text(
-                                                          'Rumus :',
+                                                          'Persamaan :',
                                                           style: TextStyle(
                                                             color: Colors.white,
                                                             fontSize: 16,
